@@ -1,0 +1,3710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tour Manager Performance Analytics Dashboard</title>
+    <!-- Chart.js and Datalabels Plugin -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+    <!-- Font Awesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #3b82f6;
+            --primary-green: #10b981;
+            --primary-orange: #f59e0b;
+            --primary-red: #ef4444;
+            --primary-purple: #8b5cf6;
+            --primary-teal: #06b6d4;
+            --success-light: #ecfdf5;
+            --success-dark: #166534;
+            --warning-light: #fffbeb;
+            --warning-dark: #92400e;
+            --danger-light: #fef2f2;
+            --danger-dark: #991b1b;
+            --info-light: #eff6ff;
+            --info-dark: #1e40af;
+            --gray-light: #f9fafb;
+            --gray-medium: #e5e7eb;
+            --text-dark: #1f2937;
+            --text-medium: #6b7280;
+            --text-light: #9ca3af;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%);
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Header Section */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-blue), #2563eb);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--primary-red), #dc2626);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.6);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* Navigation */
+        .navigation {
+            background: rgba(255,255,255,0.95);
+            border-bottom: 1px solid var(--gray-medium);
+            padding: 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-tab {
+            padding: 1.2rem 0;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-medium);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-tab::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-purple));
+            transition: width 0.3s ease;
+        }
+
+        .nav-tab.active {
+            color: var(--primary-blue);
+        }
+
+        .nav-tab.active::after,
+        .nav-tab:hover::after {
+            width: 100%;
+        }
+
+        .nav-tab:hover {
+            color: var(--text-dark);
+        }
+
+        /* Filters */
+        .filters {
+            background: rgba(255,255,255,0.9);
+            border-bottom: 1px solid var(--gray-medium);
+            padding: 1rem 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .filters-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-select {
+            padding: 0.6rem 1.2rem;
+            border: 2px solid var(--gray-medium);
+            border-radius: 8px;
+            background: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Main Content Area */
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .dashboard {
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .dashboard.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-left: 5px solid;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .metric-card:hover::before {
+            opacity: 1;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .metric-card.revenue {
+            border-left-color: var(--primary-green);
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+        }
+
+        .metric-card.tours {
+            border-left-color: var(--primary-blue);
+            background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+        }
+
+        .metric-card.managers {
+            border-left-color: var(--primary-purple);
+            background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+        }
+
+        .metric-card.average {
+            border-left-color: var(--primary-orange);
+            background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
+        }
+
+        .metric-card.efficiency {
+            border-left-color: var(--primary-teal);
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%);
+        }
+
+        .metric-card.growth {
+            border-left-color: var(--primary-red);
+            background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .metric-title {
+            font-size: 0.875rem;
+            color: var(--text-medium);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .metric-icon {
+            font-size: 2rem;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover .metric-icon {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--text-dark) 0%, #4b5563 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-change {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .metric-change.positive {
+            color: var(--success-dark);
+            background: var(--success-light);
+        }
+
+        .metric-change.negative {
+            color: var(--danger-dark);
+            background: var(--danger-light);
+        }
+
+        .metric-change.neutral {
+            color: var(--warning-dark);
+            background: var(--warning-light);
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-blue), var(--primary-purple), var(--primary-teal));
+        }
+
+        .chart-container:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .chart-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chart-canvas {
+            max-height: 350px; /* Ensures chart doesn't overflow */
+        }
+
+        /* Side by Side Layout */
+        .side-by-side {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .performers-list, .insights-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .performers-list::before, .insights-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-orange), var(--primary-red));
+        }
+
+        .performer-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem;
+            background: linear-gradient(135deg, var(--gray-light) 0%, #f3f4f6 100%);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            border: 1px solid var(--gray-medium);
+        }
+
+        .performer-item:hover {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            transform: translateX(8px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .performer-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .performer-rank {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 0.875rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .rank-1 { background: linear-gradient(135deg, #fbbf24, var(--primary-orange)); }
+        .rank-2 { background: linear-gradient(135deg, #9ca3af, #6b7280); }
+        .rank-3 { background: linear-gradient(135deg, #d97706, #c2410c); }
+        .rank-other { background: linear-gradient(135deg, var(--primary-blue), var(--primary-purple)); }
+
+        .performer-details h4 {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .performer-details p {
+            font-size: 0.875rem;
+            color: var(--text-medium);
+        }
+
+        .performer-stats {
+            text-align: right;
+        }
+
+        .performer-revenue {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .performer-average {
+            font-size: 0.875rem;
+            color: var(--text-medium);
+        }
+
+        /* Insight Items */
+        .insight-item {
+            padding: 1.2rem;
+            border-radius: 12px;
+            border-left: 4px solid;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .insight-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, currentColor, transparent);
+            opacity: 0.6;
+        }
+
+        .insight-item.success {
+            background: linear-gradient(135deg, var(--success-light) 0%, #f0fdf4 100%);
+            border-left-color: var(--primary-green);
+            color: var(--success-dark);
+        }
+
+        .insight-item.warning {
+            background: linear-gradient(135deg, var(--warning-light) 0%, #fefce8 100%);
+            border-left-color: var(--primary-orange);
+            color: var(--warning-dark);
+        }
+
+        .insight-item.info {
+            background: linear-gradient(135deg, var(--info-light) 0%, #f8fafc 100%);
+            border-left-color: var(--primary-blue);
+            color: var(--info-dark);
+        }
+
+        .insight-item.danger {
+            background: linear-gradient(135deg, var(--danger-light) 0%, #fef7f7 100%);
+            border-left-color: var(--primary-red);
+            color: var(--danger-dark);
+        }
+
+        .insight-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .insight-description {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 3px dashed var(--gray-medium);
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            background: linear-gradient(135deg, var(--gray-light) 0%, #f3f4f6 100%);
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+            transition: left 2s ease-in-out;
+        }
+
+        .upload-area:hover::before {
+            left: 100%;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-blue);
+            background: linear-gradient(135deg, var(--info-light) 0%, #f8fafc 100%);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--primary-blue);
+            background: linear-gradient(135deg, var(--info-light) 0%, #dbeafe 100%);
+            transform: scale(1.02);
+        }
+
+        .upload-progress {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .progress-bar-container {
+            background: var(--gray-medium);
+            border-radius: 8px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, var(--primary-blue), var(--primary-green));
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .upload-status {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--primary-blue);
+        }
+
+        /* Help Section */
+        .help-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .help-section {
+            padding: 2rem;
+            border-bottom: 1px solid var(--gray-medium);
+        }
+
+        .help-section:last-child {
+            border-bottom: none;
+        }
+
+        .help-section h3 {
+            color: var(--primary-blue);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .help-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .help-card {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-blue);
+        }
+
+        .help-card h4 {
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        /* Status Indicators */
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-excellent {
+            background: var(--success-light);
+            color: var(--success-dark);
+        }
+
+        .status-good {
+            background: var(--info-light);
+            color: var(--info-dark);
+        }
+
+        .status-average {
+            background: var(--warning-light);
+            color: var(--warning-dark);
+        }
+
+        .status-poor {
+            background: var(--danger-light);
+            color: var(--danger-dark);
+        }
+
+        /* Animations */
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header h1 {
+                font-size: 2.2rem;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .nav-tab {
+                padding: 1rem 0;
+                border-bottom: 1px solid var(--gray-medium);
+                border-left: 3px solid transparent;
+            }
+
+            .nav-tab.active {
+                border-left-color: var(--primary-blue);
+                border-bottom-color: transparent;
+            }
+
+            .filters-content {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+
+            .charts-grid, .side-by-side {
+                grid-template-columns: 1fr;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Custom Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            position: relative;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            gap: 0.75rem;
+        }
+
+        .modal-body {
+            font-size: 1rem;
+            color: var(--text-medium);
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .modal-actions .btn {
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        /* Export Dropdown */
+        .export-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .export-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+            overflow: hidden;
+            min-width: 200px;
+            z-index: 500;
+            border: 1px solid var(--gray-medium);
+            animation: fadeIn 0.15s ease;
+        }
+
+        .export-menu.open {
+            display: block;
+        }
+
+        .export-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            width: 100%;
+            padding: 0.8rem 1.1rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-dark);
+            text-align: left;
+            transition: background 0.15s;
+        }
+
+        .export-menu-item:hover {
+            background: var(--info-light);
+            color: var(--primary-blue);
+        }
+
+        .export-menu-item i {
+            width: 16px;
+            color: var(--primary-blue);
+        }
+
+        /* Data Table */
+        .dt-th {
+            padding: 0.9rem 1rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            white-space: nowrap;
+            text-align: left;
+            user-select: none;
+        }
+
+        .dt-th.sortable {
+            cursor: pointer;
+        }
+
+        .dt-th.sortable:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .dt-th .sort-icon {
+            margin-left: 4px;
+            opacity: 0.5;
+            font-size: 0.7em;
+        }
+
+        .dt-th.sort-asc .sort-icon,
+        .dt-th.sort-desc .sort-icon {
+            opacity: 1;
+        }
+
+        .dt-td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--gray-medium);
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        #dataTable tbody tr:last-child .dt-td {
+            border-bottom: none;
+        }
+
+        #dataTable tbody tr:hover {
+            background: var(--info-light);
+        }
+
+        .dt-badge {
+            display: inline-block;
+            padding: 0.2rem 0.55rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: var(--gray-light);
+            color: var(--text-medium);
+            max-width: 130px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dt-revenue {
+            font-weight: 700;
+            color: var(--success-dark);
+        }
+
+        .pg-btn {
+            padding: 0.35rem 0.65rem;
+            border: 1px solid var(--gray-medium);
+            border-radius: 7px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            transition: all 0.15s;
+        }
+
+        .pg-btn:hover:not(:disabled) {
+            background: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+
+        .pg-btn.active {
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-purple));
+            color: white;
+            border-color: transparent;
+        }
+
+        .pg-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .search-highlight {
+            background: #fef08a;
+            border-radius: 3px;
+            padding: 0 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Section -->
+    <header class="header">
+        <div class="header-content">
+            <div>
+                <h1><i class="fas fa-chart-line"></i> Tour Manager Analytics</h1>
+                <p>Transform tour data into strategic business intelligence</p>
+            </div>
+            <div class="header-actions">
+                <label for="csvUpload" class="btn btn-primary">
+                    <i class="fas fa-upload"></i>
+                    Upload CSV(s)
+                </label>
+                <input type="file" id="csvUpload" class="file-input" accept=".csv" multiple>
+                <div class="export-dropdown" id="exportDropdown">
+                    <button class="btn btn-secondary" onclick="app.toggleExportMenu(event)">
+                        <i class="fas fa-download"></i>
+                        Export <i class="fas fa-caret-down" style="margin-left:4px; font-size:0.8em;"></i>
+                    </button>
+                    <div class="export-menu" id="exportMenu">
+                        <button class="export-menu-item" onclick="app.exportData(); app.closeExportMenu()">
+                            <i class="fas fa-code"></i> Export as JSON
+                        </button>
+                        <button class="export-menu-item" onclick="app.exportCSV(); app.closeExportMenu()">
+                            <i class="fas fa-file-csv"></i> Export as CSV
+                        </button>
+                        <button class="export-menu-item" onclick="app.exportCSV('filtered'); app.closeExportMenu()">
+                            <i class="fas fa-filter"></i> Export Filtered CSV
+                        </button>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" onclick="app.testUpload()" title="Test upload functionality">
+                    <i class="fas fa-vial"></i>
+                    Test
+                </button>
+                <button class="btn btn-danger" onclick="app.showConfirmModal('Clear All Data', 'Are you sure you want to clear all data? This action cannot be undone.', app.clearData)">
+                    <i class="fas fa-trash"></i>
+                    Clear All
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="navigation">
+        <div class="nav-content">
+            <div class="nav-tabs">
+                <div id="executiveTab" class="nav-tab active" onclick="app.switchView('executive')">
+                    <i class="fas fa-tachometer-alt"></i> Executive Overview
+                </div>
+                <div id="managerTab" class="nav-tab" onclick="app.switchView('manager')">
+                    <i class="fas fa-user-tie"></i> Manager Performance
+                </div>
+                <div id="operationalTab" class="nav-tab" onclick="app.switchView('operational')">
+                    <i class="fas fa-cogs"></i> Operational Intelligence
+                </div>
+                <div id="dataTableTab" class="nav-tab" onclick="app.switchView('dataTable')">
+                    <i class="fas fa-table"></i> Data Table
+                </div>
+                <div id="helpTab" class="nav-tab" onclick="app.switchView('help')">
+                    <i class="fas fa-question-circle"></i> Help & Tips
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Filters -->
+    <section class="filters">
+        <div class="filters-content">
+            <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                <div class="filter-group">
+                    <i class="fas fa-filter" style="color: var(--text-medium);"></i>
+                    <select id="dateRange" class="filter-select" onchange="app.applyFilters()">
+                        <option value="all">All Time</option>
+                        <option value="ytd">Year to Date</option>
+                        <option value="qtd">Quarter to Date</option>
+                        <option value="mtd">Month to Date</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <select id="managerFilter" class="filter-select" onchange="app.applyFilters()">
+                        <option value="all">All Managers</option>
+                        <!-- Options populated by JS -->
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <select id="tourTypeFilter" class="filter-select" onchange="app.applyFilters()">
+                        <option value="all">All Tour Types</option>
+                        <!-- Options populated by JS -->
+                    </select>
+                </div>
+            </div>
+            <div class="reset-section">
+                <button class="btn btn-secondary" onclick="app.resetFilters()">
+                    <i class="fas fa-undo"></i> Reset Filters
+                </button>
+                <button class="btn btn-secondary" onclick="app.resetCurrentView()">
+                    <i class="fas fa-refresh"></i> Reset View
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Upload Area (shown when no data) -->
+        <section id="uploadArea" class="upload-area">
+            <i class="fas fa-cloud-upload-alt pulse" style="font-size: 4rem; color: var(--primary-blue); margin-bottom: 1rem;"></i>
+            <h3 style="color: var(--text-dark); margin-bottom: 0.5rem;">Upload Your Tour Data</h3>
+            <p style="color: var(--text-medium); margin-bottom: 1rem;">Drag and drop multiple CSV files here or click the upload button above</p>
+            <p style="font-size: 0.875rem; color: var(--text-light);">
+                <strong>Bulk Upload Support:</strong> Upload multiple CSV files at once for comprehensive analysis<br>
+                Supports CSV files with tour manager performance data including Tour Name, Tour Date, Manager, and financial details
+            </p>
+            <div id="uploadProgress" class="upload-progress">
+                <div class="progress-bar-container">
+                    <div id="progressBar" class="progress-bar"></div>
+                </div>
+                <p id="uploadStatus" class="upload-status"></p>
+            </div>
+        </section>
+
+        <!-- Executive Dashboard -->
+        <section id="executiveDashboard" class="dashboard">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="color: var(--text-dark); font-size: 2.2rem; font-weight: 800;">
+                    <i class="fas fa-chart-line" style="color: var(--primary-blue);"></i> Executive Overview
+                </h2>
+                <button class="btn btn-secondary" onclick="app.resetExecutiveDashboard()">
+                    <i class="fas fa-refresh"></i> Reset Dashboard
+                </button>
+            </div>
+            
+            <!-- Enhanced Metrics Grid with More KPIs -->
+            <div class="metrics-grid">
+                <div class="metric-card revenue">
+                    <div class="metric-header">
+                        <div class="metric-title">Total Revenue</div>
+                        <i class="fas fa-dollar-sign metric-icon" style="color: var(--primary-green);"></i>
+                    </div>
+                    <div class="metric-value" id="totalRevenue">$0</div>
+                    <div class="metric-change positive" id="revenueChange">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>8.5%</span>
+                    </div>
+                </div>
+                
+                <div class="metric-card tours">
+                    <div class="metric-header">
+                        <div class="metric-title">Unique Tours</div>
+                        <i class="fas fa-route metric-icon" style="color: var(--primary-blue);"></i>
+                    </div>
+                    <div class="metric-value" id="totalTours">0</div>
+                    <div class="metric-change positive" id="toursChange">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>12.3%</span>
+                    </div>
+                </div>
+                
+                <div class="metric-card managers">
+                    <div class="metric-header">
+                        <div class="metric-title">Active Managers</div>
+                        <i class="fas fa-users metric-icon" style="color: var(--primary-purple);"></i>
+                    </div>
+                    <div class="metric-value" id="totalManagers">0</div>
+                    <div class="metric-change positive" id="managersChange">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>5.2%</span>
+                    </div>
+                </div>
+                
+                <div class="metric-card average">
+                    <div class="metric-header">
+                        <div class="metric-title">Avg Revenue/Tour</div>
+                        <i class="fas fa-chart-line metric-icon" style="color: var(--primary-orange);"></i>
+                    </div>
+                    <div class="metric-value" id="avgRevenue">$0</div>
+                    <div class="metric-change negative" id="avgRevenueChange">
+                        <i class="fas fa-arrow-down"></i>
+                        <span>2.1%</span>
+                    </div>
+                </div>
+
+                <div class="metric-card efficiency">
+                    <div class="metric-header">
+                        <div class="metric-title">Revenue/Participant</div>
+                        <i class="fas fa-user-dollar metric-icon" style="color: var(--primary-teal);"></i>
+                    </div>
+                    <div class="metric-value" id="revenuePerParticipant">$0</div>
+                    <div class="metric-change positive" id="revenuePerParticipantChange">
+                        <i class="fas fa-star"></i>
+                        <span>Efficiency</span>
+                    </div>
+                </div>
+
+                <div class="metric-card growth">
+                    <div class="metric-header">
+                        <div class="metric-title">Avg Group Size</div>
+                        <i class="fas fa-user-friends metric-icon" style="color: var(--primary-red);"></i>
+                    </div>
+                    <div class="metric-value" id="avgGroupSize">0</div>
+                    <div class="metric-change neutral" id="groupSizeChange">
+                        <i class="fas fa-users"></i>
+                        <span>People/Tour</span>
+                    </div>
+                </div>
+
+                <div class="metric-card revenue">
+                    <div class="metric-header">
+                        <div class="metric-title">Top Manager Revenue</div>
+                        <i class="fas fa-trophy metric-icon" style="color: var(--primary-green);"></i>
+                    </div>
+                    <div class="metric-value" id="topManagerRevenue">$0</div>
+                    <div class="metric-change positive" id="topManagerName">
+                        <i class="fas fa-crown"></i>
+                        <span id="topManagerNameText">Leader</span>
+                    </div>
+                </div>
+
+                <div class="metric-card tours">
+                    <div class="metric-header">
+                        <div class="metric-title">Market Concentration</div>
+                        <i class="fas fa-chart-pie metric-icon" style="color: var(--primary-blue);"></i>
+                    </div>
+                    <div class="metric-value" id="marketConcentration">0%</div>
+                    <div class="metric-change neutral" id="concentrationChange">
+                        <i class="fas fa-balance-scale"></i>
+                        <span>Distribution</span>
+                    </div>
+                </div>
+
+                <div class="metric-card managers">
+                    <div class="metric-header">
+                        <div class="metric-title">Customer Mix</div>
+                        <i class="fas fa-chart-donut metric-icon" style="color: var(--primary-purple);"></i>
+                    </div>
+                    <div class="metric-value" id="customerMixPrimary">0%</div>
+                    <div class="metric-change positive" id="customerMixDetail">
+                        <i class="fas fa-percentage"></i>
+                        <span id="customerMixText">Adults</span>
+                    </div>
+                </div>
+
+                <div class="metric-card average">
+                    <div class="metric-header">
+                        <div class="metric-title">Tour Frequency</div>
+                        <i class="fas fa-calendar-alt metric-icon" style="color: var(--primary-orange);"></i>
+                    </div>
+                    <div class="metric-value" id="tourFrequency">0</div>
+                    <div class="metric-change neutral" id="frequencyChange">
+                        <i class="fas fa-clock"></i>
+                        <span>Tours/Manager</span>
+                    </div>
+                </div>
+
+                <div class="metric-card efficiency">
+                    <div class="metric-header">
+                        <div class="metric-title">Booking Diversity</div>
+                        <i class="fas fa-layer-group metric-icon" style="color: var(--primary-teal);"></i>
+                    </div>
+                    <div class="metric-value" id="bookingDiversity">0</div>
+                    <div class="metric-change positive" id="diversityChange">
+                        <i class="fas fa-expand-arrows-alt"></i>
+                        <span>Tour Types</span>
+                    </div>
+                </div>
+
+                <div class="metric-card growth">
+                    <div class="metric-header">
+                        <div class="metric-title">Performance Variance</div>
+                        <i class="fas fa-chart-area metric-icon" style="color: var(--primary-red);"></i>
+                    </div>
+                    <div class="metric-value" id="performanceVariance">0%</div>
+                    <div class="metric-change neutral" id="varianceChange">
+                        <i class="fas fa-wave-square"></i>
+                        <span>Consistency</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3 class="chart-title">
+                        <i class="fas fa-chart-bar"></i> Manager Performance Rankings
+                    </h3>
+                    <canvas id="managerPerformanceChart" class="chart-canvas"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <h3 class="chart-title">
+                        <i class="fas fa-chart-pie"></i> Revenue by Tour Type
+                    </h3>
+                    <canvas id="tourTypeChart" class="chart-canvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Side by Side: Top Performers & Strategic Insights -->
+            <div class="side-by-side">
+                <div class="performers-list">
+                    <h3 class="chart-title">
+                        <i class="fas fa-medal"></i> Top Performers
+                    </h3>
+                    <div id="topPerformersList"></div>
+                </div>
+
+                <div class="insights-container">
+                    <h3 class="chart-title">
+                        <i class="fas fa-lightbulb"></i> Strategic Insights
+                    </h3>
+                    <div id="strategicInsights"></div>
+                </div>
+            </div>
+
+            <!-- Data Sources Summary -->
+            <div class="chart-container">
+                <h3 class="chart-title">
+                    <i class="fas fa-database"></i> Data Sources Summary
+                </h3>
+                <div id="dataSourcesSummary"></div>
+            </div>
+
+            <!-- Revenue Calculation Demo -->
+            <div class="chart-container">
+                <h3 class="chart-title">
+                    <i class="fas fa-calculator"></i> Revenue Calculation Verification
+                </h3>
+                <div id="revenueCalculationDemo"></div>
+            </div>
+        </section>
+
+        <!-- Manager Dashboard -->
+        <section id="managerDashboard" class="dashboard">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="color: var(--text-dark); font-size: 2.2rem; font-weight: 800;">
+                    <i class="fas fa-user-tie" style="color: var(--primary-blue);"></i> Manager Performance
+                </h2>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <select id="managerSelector" class="filter-select" onchange="app.updateManagerDashboard()">
+                        <option value="">Select Manager</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="app.resetManagerDashboard()">
+                        <i class="fas fa-refresh"></i> Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- Manager Metrics -->
+            <div class="metrics-grid" id="managerMetrics"></div>
+
+            <!-- Manager Charts -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3 class="chart-title">
+                        <i class="fas fa-users"></i> Customer Demographics
+                    </h3>
+                    <canvas id="customerDemographicsChart" class="chart-canvas"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <h3 class="chart-title">
+                        <i class="fas fa-radar"></i> Performance Radar
+                    </h3>
+                    <canvas id="performanceRadarChart" class="chart-canvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            <div class="chart-container">
+                <h3 class="chart-title">
+                    <i class="fas fa-brain"></i> AI-Powered Recommendations
+                </h3>
+                <div id="managerRecommendations"></div>
+            </div>
+        </section>
+
+        <!-- Operational Dashboard -->
+        <section id="operationalDashboard" class="dashboard">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="color: var(--text-dark); font-size: 2.2rem; font-weight: 800;">
+                    <i class="fas fa-cogs" style="color: var(--primary-blue);"></i> Operational Intelligence
+                </h2>
+                <button class="btn btn-secondary" onclick="app.resetOperationalDashboard()">
+                    <i class="fas fa-refresh"></i> Reset
+                </button>
+            </div>
+            
+            <!-- Efficiency Analysis -->
+            <div class="chart-container" style="margin-bottom: 2rem;">
+                <h3 class="chart-title">
+                    <i class="fas fa-chart-scatter"></i> Manager Efficiency Matrix
+                </h3>
+                <canvas id="efficiencyChart" class="chart-canvas"></canvas>
+            </div>
+
+            <!-- Resource Allocation -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3 class="chart-title">
+                        <i class="fas fa-tasks"></i> Tour Assignment Optimization
+                    </h3>
+                    <div id="tourAssignmentOptimization"></div>
+                </div>
+                
+                <div class="chart-container">
+                    <h3 class="chart-title">
+                        <i class="fas fa-chalkboard-teacher"></i> Performance Coaching Matrix
+                    </h3>
+                    <div id="performanceCoachingMatrix"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table Dashboard -->
+        <section id="dataTableDashboard" class="dashboard">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <h2 style="color: var(--text-dark); font-size: 2.2rem; font-weight: 800;">
+                    <i class="fas fa-table" style="color: var(--primary-blue);"></i> Data Table
+                </h2>
+                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                    <span id="tableRecordCount" style="font-size: 0.9rem; color: var(--text-medium); padding: 0.4rem 0.8rem; background: var(--gray-light); border-radius: 8px; font-weight: 600;"></span>
+                    <button class="btn btn-secondary" onclick="app.exportCSV('filtered')">
+                        <i class="fas fa-file-csv"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search & Controls -->
+            <div style="background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); padding: 1.5rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <div style="position: relative; flex: 1; min-width: 200px;">
+                        <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-light);"></i>
+                        <input type="text" id="tableSearch" placeholder="Search by manager, tour name, or optional service…"
+                            style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem; border: 2px solid var(--gray-medium); border-radius: 10px; font-size: 0.9rem; transition: all 0.2s;"
+                            oninput="app.filterTable()" onfocus="this.style.borderColor='var(--primary-blue)'" onblur="this.style.borderColor='var(--gray-medium)'">
+                    </div>
+                    <select id="tablePageSize" class="filter-select" onchange="app.renderTable()">
+                        <option value="15">15 / page</option>
+                        <option value="25" selected>25 / page</option>
+                        <option value="50">50 / page</option>
+                        <option value="100">100 / page</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="app.clearTableSearch()" style="padding: 0.65rem 1rem;">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div style="background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden;">
+                <div style="overflow-x: auto;">
+                    <table id="dataTable" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                        <thead>
+                            <tr id="tableHeader" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                <th class="dt-th sortable" data-col="rowNum" style="width: 48px;">#</th>
+                                <th class="dt-th sortable" data-col="tourName">Tour Name</th>
+                                <th class="dt-th sortable" data-col="tourManager">Manager</th>
+                                <th class="dt-th sortable" data-col="tourDate">Date</th>
+                                <th class="dt-th sortable" data-col="totalAdults" style="text-align:right;">Adults</th>
+                                <th class="dt-th sortable" data-col="totalSeniors" style="text-align:right;">Seniors</th>
+                                <th class="dt-th sortable" data-col="totalChildren" style="text-align:right;">Children</th>
+                                <th class="dt-th sortable" data-col="totalParticipants" style="text-align:right;">Total Pax</th>
+                                <th class="dt-th sortable" data-col="revenue" style="text-align:right;">Revenue</th>
+                                <th class="dt-th" style="text-align:left;">Optional Service</th>
+                                <th class="dt-th" style="text-align:center;">Source</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr><td colspan="11" style="text-align:center; padding: 3rem; color: var(--text-light);">No data loaded.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div id="tablePagination" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-top: 1px solid var(--gray-medium); flex-wrap: wrap; gap: 0.75rem;">
+                    <span id="tablePaginationInfo" style="font-size: 0.875rem; color: var(--text-medium);"></span>
+                    <div id="tablePaginationBtns" style="display: flex; gap: 0.4rem;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Help Dashboard -->
+        <section id="helpDashboard" class="dashboard">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="color: var(--text-dark); font-size: 2.2rem; font-weight: 800;">
+                    <i class="fas fa-question-circle" style="color: var(--primary-blue);"></i> Help & Tips
+                </h2>
+            </div>
+
+            <div class="help-container">
+                <div class="help-section">
+                    <h3><i class="fas fa-file-csv"></i> Data Requirements & File Format</h3>
+                    <div class="help-grid">
+                        <div class="help-card">
+                            <h4>📋 Required Columns</h4>
+                            <p><strong>Essential:</strong> Tour Name, Tour Manager, Tour Date<br>
+                            <strong>Financial:</strong> Adult Rate, Senior Rate, Child Rate<br>
+                            <strong>Participants:</strong> Total Adults, Total Seniors, Total Children<br>
+                            <strong>Optional:</strong> Optional Name (for add-on services)</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>📝 Sample CSV Format</h4>
+                            <p><strong>Headers:</strong><br>
+                            Tour Name,Tour Manager,Tour Date,Adult Rate,Senior Rate,Child Rate,Total Adults,Total Seniors,Total Children,Optional Name<br><br>
+                            <strong>Sample Row:</strong><br>
+                            QDU,Mayan Hein,2024-10-09,399,0,399,18,0,0,Grand Canyon Heli</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>💵 Currency & Number Format</h4>
+                            <p>Currency symbols ($) and commas are automatically removed. Supports formats like: $399.00, 399, $1,250.50<br><br>
+                            Dates supported: YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>🔄 Alternative Column Names</h4>
+                            <p>System recognizes variations:<br>
+                            • Tour Manager = Manager = TourManager<br>
+                            • Tour Date = Date = TourDate<br>
+                            • Total Adults = Adults = TotalAdults<br>
+                            • Case insensitive header matching</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>📊 Data Quality Tips</h4>
+                            <p><strong>Best Practices:</strong><br>
+                            • Ensure no empty required fields<br>
+                            • Use consistent date formats<br>
+                            • Include all participant counts (use 0 if none)<br>
+                            • Keep manager names consistent across files</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>⚠️ Common Issues</h4>
+                            <p><strong>Upload Failures:</strong><br>
+                            • Missing required columns<br>
+                            • Inconsistent date formats<br>
+                            • Special characters in numbers<br>
+                            • Empty header rows<br>
+                            Check console (F12) for detailed error messages</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3><i class="fas fa-calculator"></i> Revenue Calculation & Core KPIs</h3>
+                    <div class="help-grid">
+                        <div class="help-card">
+                            <h4>🔢 Revenue Formula</h4>
+                            <p><strong>Total Revenue = (Adult Rate x Total Adults) + (Senior Rate x Total Seniors) + (Child Rate x Total Children)</strong><br><br>
+                            Each tour entry is calculated individually, then summed for total revenue. This ensures accurate pricing across all customer segments.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>📊 Unique Tours Calculation</h4>
+                            <p>Tours are counted uniquely by combining <strong>Tour Name + Tour Date</strong>. Multiple bookings for the same tour (different participants) count as one unique tour for operational metrics.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>💰 Revenue per Participant</h4>
+                            <p>Total Revenue divided by Total Participants. Measures pricing efficiency and indicates how well tours monetize each customer. Higher values suggest premium positioning or effective upselling.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>👥 Average Group Size</h4>
+                            <p>Total Participants divided by Unique Tours. Indicates tour capacity utilization and booking efficiency. Larger groups typically mean better operational efficiency.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>🏆 Market Concentration</h4>
+                            <p>Revenue share of top 3 managers as % of total. High concentration (>70%) indicates dependence on few performers. Balanced distribution reduces operational risk.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>👨‍👩‍👧‍👦 Customer Mix</h4>
+                            <p>Percentage breakdown of Adults, Seniors, and Children. Shows primary market segment and helps guide pricing strategies and tour design decisions.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>📅 Tour Frequency</h4>
+                            <p>Average unique tours per manager. Indicates workload distribution and manager utilization. Helps identify capacity constraints or underutilization.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>🎭 Booking Diversity</h4>
+                            <p>Average tour types per manager. Higher diversity indicates versatile managers who can handle multiple tour categories, providing scheduling flexibility.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>📈 Performance Variance</h4>
+                            <p>Coefficient of variation of manager revenues. Lower variance (<30%) indicates consistent team performance. Higher variance suggests uneven skill distribution.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3><i class="fas fa-chart-line"></i> Advanced Analytics Explained</h3>
+                    <div class="help-grid">
+                        <div class="help-card">
+                            <h4>🎯 Performance Rankings</h4>
+                            <p>Managers ranked by total revenue, average revenue per tour, tour variety, and customer engagement. Color-coded: 🟢 Excellent (Top 25%), 🔵 Good (50-75%), 🟡 Average (25-50%), 🔴 Needs Improvement (Bottom 25%)</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>🧠 AI Recommendations</h4>
+                            <p>Machine learning analyzes patterns to suggest: Revenue optimization strategies, Tour-manager optimal pairings, Mentorship opportunities, Training priorities, Pricing adjustments</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>⚡ Efficiency Matrix</h4>
+                            <p>Scatter plot showing Tours vs Revenue for each manager. Top-right quadrant = high efficiency. Identifies optimal performers and improvement opportunities.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>🎪 Customer Demographics</h4>
+                            <p>Pie charts showing Adult/Senior/Child distribution per manager. Helps identify specialization patterns and target market alignment for optimal assignments.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>🕸️ Performance Radar</h4>
+                            <p>Multi-dimensional view: Revenue Excellence, Tour Diversity, Customer Engagement, Tour Frequency. Shows manager strengths and development areas at a glance.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>🔄 Cross-File Analysis</h4>
+                            <p>When multiple CSV files are uploaded, the system automatically detects patterns across sources, time periods, and departments for comprehensive insights.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3><i class="fas fa-brain"></i> Strategic Insights & Recommendations</h3>
+                    <div class="help-grid">
+                        <div class="help-card">
+                            <h4>📈 Revenue Optimization</h4>
+                            <p><strong>High Priority:</strong> Managers <20% below average need immediate coaching.<br>
+                            <strong>Medium Priority:</strong> Focus on upselling optional packages.<br>
+                            <strong>Best Practice:</strong> Pair top performers with struggling managers for mentorship.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>🎯 Tour Assignment Strategy</h4>
+                            <p>AI analyzes historical performance to recommend optimal tour-manager pairings. Success probability scores help maximize revenue potential while maintaining service quality.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>👥 Team Development</h4>
+                            <p><strong>Mentorship Matching:</strong> High performers mentor specific weakness areas.<br>
+                            <strong>Skill Development:</strong> Cross-training recommendations based on market demand.<br>
+                            <strong>Performance Tracking:</strong> Monitor improvement post-coaching.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>💡 Business Intelligence</h4>
+                            <p>Real-time insights identify: Market opportunities, Pricing optimization potential, Seasonal patterns, Capacity utilization issues, Customer preference trends</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>⚠️ Risk Management</h4>
+                            <p>Dashboard flags: Over-dependence on few managers, Revenue concentration risks, Skill gap vulnerabilities, Customer segment imbalances, Performance anomalies</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>🎲 Predictive Analytics</h4>
+                            <p>Historical patterns predict: Future revenue potential, Optimal pricing strategies, Manager-tour success rates, Seasonal demand fluctuations, Training ROI estimates</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3><i class="fas fa-filter"></i> Using Filters</h3>
+                    <div class="help-grid">
+                        <div class="help-card">
+                            <h4>Date Ranges</h4>
+                            <p>Filter by All Time, Year to Date (YTD), Quarter to Date (QTD), or Month to Date (MTD) to analyze performance periods.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>Manager & Tour Type Filters</h4>
+                            <p>Focus analysis on specific managers or tour types. Combine filters for detailed insights into performance patterns.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>Reset Functions</h4>
+                            <p>Use Reset Filters to clear selections, Reset View to refresh current dashboard, or Reset Dashboard for complete refresh.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3><i class="fas fa-brain"></i> AI Recommendations</h3>
+                    <div class="help-grid">
+                        <div class="help-card">
+                            <h4>Performance Insights</h4>
+                            <p>AI analyzes patterns to suggest coaching opportunities, optimal tour assignments, and revenue optimization strategies.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>Color Coding</h4>
+                            <p>🟢 Excellent (Top 25%), 🔵 Good (50-75%), 🟡 Average (25-50%), 🔴 Needs Improvement (Bottom 25%)</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>Strategic Actions</h4>
+                            <p>Follow high-priority recommendations first. Pair high performers with those needing improvement for mentorship.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3><i class="fas fa-download"></i> Export & Data Management</h3>
+                    <div class="help-grid">
+                        <div class="help-card">
+                            <h4>Export Data</h4>
+                            <p>Export all analytics, calculations, and insights as JSON for backup or integration with other systems.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>Local Storage</h4>
+                            <p>Data is automatically saved in your browser. It persists between sessions but is specific to this browser/device.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>Bulk Upload & Processing</h4>
+                            <p><strong>Multiple Files:</strong> Select multiple CSV files at once or drag & drop them together. Each file is processed individually and data is automatically combined for comprehensive analysis across all sources.</p>
+                        </div>
+                        <div class="help-card">
+                            <h4>Data Validation & Errors</h4>
+                            <p>The system validates each file individually. Invalid files are skipped with error reporting while valid files are processed. Source file tracking helps identify data origins for quality control.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Custom Modal Structure -->
+    <div id="appModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i id="modalIcon" class="fas"></i>
+                <h3 id="modalTitle"></h3>
+            </div>
+            <p id="modalMessage" class="modal-body"></p>
+            <div class="modal-actions">
+                <button id="modalConfirmBtn" class="btn btn-primary" style="display: none;">Confirm</button>
+                <button id="modalCloseBtn" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Register Chart.js datalabels plugin
+        Chart.register(ChartDataLabels);
+
+        // Define the main application object to encapsulate all logic and state
+        const app = {
+            // Centralized application state
+            appState: {
+                rawData: [],
+                filteredData: [],
+                managerPerformance: {},
+                tourTypeAnalysis: {},
+                charts: {}, // Stores Chart.js instances
+                uniqueTours: new Set(), // Set to store unique tour IDs
+            },
+
+            // --- Initialization ---
+            init: function() {
+                console.log('DOM Content Loaded - Initializing application');
+                this.loadDataFromStorage();
+                this.setupEventListeners();
+                this.initializeCharts(); // Initialize empty charts
+                this.updateDashboards(); // Populate dashboards with loaded data
+                console.log('Application initialization complete');
+
+                // Auto-save every 30 seconds
+                setInterval(() => {
+                    if (this.appState.rawData.length > 0) {
+                        this.saveDataToStorage();
+                    }
+                }, 30000);
+            },
+
+            // --- Local Storage Functions ---
+            saveDataToStorage: function() {
+                try {
+                    localStorage.setItem('tourManagerData', JSON.stringify(this.appState.rawData));
+                    localStorage.setItem('lastUpdated', new Date().toISOString());
+                    console.log('Data saved to local storage.');
+                } catch (e) {
+                    console.error('Failed to save data to local storage:', e);
+                    this.showAlertModal('Error', 'Failed to save data to local storage. Please check your browser settings.');
+                }
+            },
+
+            loadDataFromStorage: function() {
+                console.log('Loading data from storage...');
+                const stored = localStorage.getItem('tourManagerData');
+                
+                if (stored) {
+                    try {
+                        this.appState.rawData = JSON.parse(stored);
+                        this.appState.filteredData = [...this.appState.rawData];
+                        this.processData(); // Process loaded data
+                        document.getElementById('uploadArea').style.display = 'none';
+                        console.log(`Loaded ${this.appState.rawData.length} records from storage.`);
+                    } catch (error) {
+                        console.error('Error parsing stored data:', error);
+                        this.showAlertModal('Data Load Error', 'Corrupted data found in local storage. Loading sample data instead.');
+                        this.loadSampleData();
+                    }
+                } else {
+                    console.log('No stored data found, loading sample data.');
+                    this.loadSampleData();
+                }
+            },
+
+            clearData: function() {
+                localStorage.removeItem('tourManagerData');
+                localStorage.removeItem('lastUpdated');
+                this.appState.rawData = [];
+                this.appState.filteredData = [];
+                this.appState.managerPerformance = {};
+                this.appState.tourTypeAnalysis = {};
+                this.appState.uniqueTours.clear();
+                
+                // Destroy all Chart.js instances to prevent memory leaks
+                Object.values(this.appState.charts).forEach(chart => {
+                    if (chart && typeof chart.destroy === 'function') {
+                        chart.destroy();
+                    }
+                });
+                this.appState.charts = {}; // Clear chart references
+                this.initializeCharts(); // Re-initialize empty charts
+
+                this.updateDashboards(); // Update UI to reflect empty state
+                document.getElementById('uploadArea').style.display = 'block'; // Show upload area again
+                this.showAlertModal('Data Cleared', 'All analytics data has been cleared successfully.');
+                console.log('All data cleared.');
+            },
+
+            loadSampleData: function() {
+                console.log('Loading sample data...');
+                this.appState.rawData = [
+                    { tourName: "QDU", tourManager: "Mayan Hein", tourDate: "2024-10-09", optionalName: "Grand Canyon Heli (40-min Imperial- Ecostar) HGG-2", adultRate: 399.00, seniorRate: 0, childRate: 399.00, totalAdults: 18, totalSeniors: 0, totalChildren: 0, sourceFile: "Sample Data" },
+                    { tourName: "QDU", tourManager: "Mayan Hein", tourDate: "2024-10-09", optionalName: "Grand Canyon Heli (40-min Imperial- Ecostar) HGG-2", adultRate: 399.00, seniorRate: 0, childRate: 399.00, totalAdults: 5, totalSeniors: 2, totalChildren: 1, sourceFile: "Sample Data" },
+                    { tourName: "GLK", tourManager: "Sarah Johnson", tourDate: "2024-09-14", optionalName: "Audio Guide Premium", adultRate: 45.00, seniorRate: 35.00, childRate: 25.00, totalAdults: 12, totalSeniors: 8, totalChildren: 5, sourceFile: "Sample Data" },
+                    { tourName: "GLK", tourManager: "Sarah Johnson", tourDate: "2024-05-04", optionalName: "Historic Photos Package", adultRate: 35.00, seniorRate: 30.00, childRate: 20.00, totalAdults: 15, totalSeniors: 5, totalChildren: 3, sourceFile: "Sample Data" },
+                    { tourName: "GLK", tourManager: "Mike Davis", tourDate: "2024-06-01", optionalName: "Professional Photography", adultRate: 75.00, seniorRate: 65.00, childRate: 50.00, totalAdults: 8, totalSeniors: 2, totalChildren: 4, sourceFile: "Sample Data" },
+                    { tourName: "GLK", tourManager: "Jennifer Lopez", tourDate: "2024-06-29", optionalName: "Premium Tasting Menu", adultRate: 120.00, seniorRate: 100.00, childRate: 60.00, totalAdults: 10, totalSeniors: 6, totalChildren: 2, sourceFile: "Sample Data" },
+                    { tourName: "GLK", tourManager: "David Chen", tourDate: "2024-07-20", optionalName: "Wine Tasting", adultRate: 85.00, seniorRate: 75.00, childRate: 0, totalAdults: 14, totalSeniors: 4, totalChildren: 0, sourceFile: "Sample Data" },
+                    { tourName: "GLK", tourManager: "Lisa Zhang", tourDate: "2024-08-10", optionalName: "Cultural Experience", adultRate: 65.00, seniorRate: 55.00, childRate: 35.00, totalAdults: 9, totalSeniors: 7, totalChildren: 6, sourceFile: "Sample Data" }
+                ];
+                
+                this.appState.filteredData = [...this.appState.rawData];
+                this.processData();
+                this.saveDataToStorage();
+                console.log(`Sample data loaded: ${this.appState.rawData.length} records.`);
+            },
+
+            // --- Event Listeners ---
+            setupEventListeners: function() {
+                console.log('Setting up event listeners...');
+                
+                const csvUpload = document.getElementById('csvUpload');
+                if (csvUpload) {
+                    csvUpload.addEventListener('change', (event) => this.handleFileUpload(event.target.files));
+                    console.log('File upload event listener added.');
+                } else {
+                    console.error('csvUpload element not found.');
+                }
+                
+                const uploadArea = document.getElementById('uploadArea');
+                if (uploadArea) {
+                    uploadArea.addEventListener('dragover', this.handleDragOver);
+                    uploadArea.addEventListener('drop', (event) => this.handleDrop(event));
+                    uploadArea.addEventListener('dragleave', this.handleDragLeave);
+                    console.log('Drag and drop event listeners added.');
+                } else {
+                    console.error('uploadArea element not found.');
+                }
+            },
+
+            // --- File Handling ---
+            handleFileUpload: function(files) {
+                if (files.length === 0) return;
+
+                const csvFiles = Array.from(files).filter(file => file.type === 'text/csv');
+                if (csvFiles.length === 0) {
+                    this.showAlertModal('Invalid File', 'Please upload CSV files only.');
+                    return;
+                }
+
+                let processedFilesCount = 0;
+                const totalFiles = csvFiles.length;
+                this.showUploadProgress(true);
+
+                csvFiles.forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const parsedData = this.parseCSVContent(e.target.result, file.name);
+                            this.appState.rawData = [...this.appState.rawData, ...parsedData]; // Append new data
+                            this.appState.filteredData = [...this.appState.rawData]; // Re-filter all data
+                            this.processData(); // Re-process all data
+                            
+                            processedFilesCount++;
+                            this.updateUploadProgress(processedFilesCount, totalFiles);
+
+                            if (processedFilesCount === totalFiles) {
+                                this.saveDataToStorage();
+                                this.updateDashboards();
+                                document.getElementById('uploadArea').style.display = 'none';
+                                this.showAlertModal('Upload Complete', `${totalFiles} CSV file(s) processed successfully. Total records: ${this.appState.rawData.length}`);
+                                this.showUploadProgress(false); // Hide progress bar
+                            }
+                        } catch (error) {
+                            console.error(`Error processing file ${file.name}:`, error);
+                            this.showAlertModal('File Processing Error', `Could not process "${file.name}". Please ensure it's a valid CSV with correct columns. Error: ${error.message}`);
+                            processedFilesCount++;
+                            this.updateUploadProgress(processedFilesCount, totalFiles);
+                            if (processedFilesCount === totalFiles) {
+                                this.showUploadProgress(false); // Hide progress bar
+                            }
+                        }
+                    };
+                    reader.readAsText(file);
+                });
+            },
+
+            handleDragOver: function(event) {
+                event.preventDefault();
+                event.currentTarget.classList.add('dragover');
+            },
+
+            handleDrop: function(event) {
+                event.preventDefault();
+                event.currentTarget.classList.remove('dragover');
+                this.handleFileUpload(event.dataTransfer.files);
+            },
+
+            handleDragLeave: function(event) {
+                event.currentTarget.classList.remove('dragover');
+            },
+
+            showUploadProgress: function(show) {
+                const uploadProgressElement = document.getElementById('uploadProgress');
+                if (show) {
+                    uploadProgressElement.style.display = 'block';
+                    document.getElementById('progressBar').style.width = '0%';
+                    document.getElementById('uploadStatus').textContent = 'Starting upload...';
+                } else {
+                    uploadProgressElement.style.display = 'none';
+                }
+            },
+
+            updateUploadProgress: function(processed, total) {
+                const percentage = (processed / total) * 100;
+                document.getElementById('progressBar').style.width = `${percentage}%`;
+                document.getElementById('uploadStatus').textContent = `Processing ${processed} of ${total} files...`;
+            },
+
+            // --- CSV Parsing ---
+            parseCSVContent: function(csvText, fileName = 'Unknown File') {
+                const lines = csvText.split('\n').filter(line => line.trim() !== ''); // Filter out empty lines
+                if (lines.length < 2) {
+                    throw new Error('CSV file must contain at least a header and one data row.');
+                }
+                const headers = lines[0].split(',').map(h => h.trim().toLowerCase()); // Case insensitive headers
+                const data = [];
+
+                const headerMap = {
+                    'tour name': 'tourName',
+                    'tour manager': 'tourManager', 'manager': 'tourManager', 'tourmanager': 'tourManager',
+                    'tour date': 'tourDate', 'date': 'tourDate', 'tourdate': 'tourDate',
+                    'optional name': 'optionalName',
+                    'adult rate': 'adultRate',
+                    'senior rate': 'seniorRate',
+                    'child rate': 'childRate',
+                    'total adults': 'totalAdults', 'adults': 'totalAdults', 'totaladults': 'totalAdults',
+                    'total seniors': 'totalSeniors', 'seniors': 'totalSeniors', 'totalseniors': 'totalSeniors',
+                    'total children': 'totalChildren', 'children': 'totalChildren', 'totalchildren': 'totalChildren'
+                };
+
+                // Check for required headers
+                const requiredHeaders = ['tourName', 'tourManager', 'tourDate'];
+                const missingHeaders = requiredHeaders.filter(req => !Object.values(headerMap).includes(req) || !headers.some(h => headerMap[h] === req));
+                if (missingHeaders.length > 0) {
+                    throw new Error(`Missing required columns: ${missingHeaders.join(', ')}. Ensure your CSV has columns like 'Tour Name', 'Tour Manager', 'Tour Date'.`);
+                }
+
+                for (let i = 1; i < lines.length; i++) {
+                    const values = this.splitCsvLine(lines[i]); // Handle commas within quoted fields
+                    const row = { sourceFile: fileName, uploadDate: new Date().toISOString() };
+                    
+                    headers.forEach((header, index) => {
+                        const propName = headerMap[header] || header; // Use mapped name or original if no map
+                        let value = values[index] !== undefined ? values[index].trim() : '';
+                        
+                        // Clean and parse numeric values
+                        if (['adultRate', 'seniorRate', 'childRate', 'totalAdults', 'totalSeniors', 'totalChildren'].includes(propName)) {
+                            value = parseFloat(value.replace(/[$,]/g, '')) || 0; // Remove currency symbols and commas
+                        }
+                        
+                        row[propName] = value;
+                    });
+                    
+                    data.push(row);
+                }
+                return data;
+            },
+
+            // Helper to split CSV lines, accounting for commas within quotes
+            splitCsvLine: function(line) {
+                const result = [];
+                let inQuote = false;
+                let currentField = '';
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuote = !inQuote;
+                    } else if (char === ',' && !inQuote) {
+                        result.push(currentField);
+                        currentField = '';
+                    } else {
+                        currentField += char;
+                    }
+                }
+                result.push(currentField); // Add the last field
+                return result;
+            },
+
+            // --- Data Processing & Calculations ---
+            processData: function() {
+                console.log('Processing data...');
+                
+                this.appState.rawData.forEach((tour, index) => {
+                    // Ensure numeric fields are numbers
+                    const adults = Number(tour.totalAdults) || 0;
+                    const seniors = Number(tour.totalSeniors) || 0;
+                    const children = Number(tour.totalChildren) || 0;
+                    const adultRate = Number(tour.adultRate) || 0;
+                    const seniorRate = Number(tour.seniorRate) || 0;
+                    const childRate = Number(tour.childRate) || 0;
+                    
+                    // Revenue Calculation: (Adult Rate x Total Adults) + (Senior Rate x Total Seniors) + (Child Rate x Total Children)
+                    tour.revenue = (adults * adultRate) + (seniors * seniorRate) + (children * childRate);
+                    tour.totalParticipants = adults + seniors + children;
+                    
+                    // Create unique tour identifier (handle missing tourName/tourDate gracefully)
+                    const tourNameClean = tour.tourName ? tour.tourName.trim() : 'UnknownTour';
+                    const tourDateClean = tour.tourDate ? tour.tourDate.trim() : 'UnknownDate';
+                    tour.uniqueTourId = `${tourNameClean}_${tourDateClean}`;
+                    
+                    // Log detailed calculation for first few records (for debugging/verification)
+                    if (index < 3) {
+                        console.log(`Tour ${index + 1} Revenue Calculation:`, {
+                            tourName: tourNameClean,
+                            tourManager: tour.tourManager,
+                            calculation: `(${adults} adults x ${adultRate}) + (${seniors} seniors x ${seniorRate}) + (${children} children x ${childRate})`,
+                            adultRevenue: adults * adultRate,
+                            seniorRevenue: seniors * seniorRate,
+                            childRevenue: children * childRate,
+                            totalRevenue: tour.revenue,
+                            participants: tour.totalParticipants
+                        });
+                    }
+                });
+
+                // Re-calculate unique tours from the current filtered data set
+                this.appState.uniqueTours = new Set(this.appState.filteredData.map(tour => tour.uniqueTourId));
+                
+                console.log(`Processed ${this.appState.rawData.length} raw records, ${this.appState.filteredData.length} filtered records, ${this.appState.uniqueTours.size} unique tours.`);
+                
+                this.calculateManagerPerformance();
+                this.calculateTourTypeAnalysis();
+                this.updateFilterOptions(); // Re-populate filters after data processing
+            },
+
+            calculateManagerPerformance: function() {
+                this.appState.managerPerformance = {};
+                
+                this.appState.filteredData.forEach(tour => {
+                    const manager = tour.tourManager;
+                    if (!manager) return; // Skip records without a manager
+                    
+                    if (!this.appState.managerPerformance[manager]) {
+                        this.appState.managerPerformance[manager] = {
+                            totalRevenue: 0,
+                            totalTours: 0,
+                            totalParticipants: 0,
+                            tourTypes: new Set(),
+                            uniqueTours: new Set(),
+                            customerMix: { adults: 0, seniors: 0, children: 0 }
+                        };
+                    }
+                    
+                    const perf = this.appState.managerPerformance[manager];
+                    perf.totalRevenue += tour.revenue || 0;
+                    perf.totalTours += 1; // Total entries (not unique tours)
+                    perf.totalParticipants += tour.totalParticipants || 0;
+                    perf.tourTypes.add(tour.tourName); // Track all tour names managed
+                    perf.uniqueTours.add(tour.uniqueTourId); // Track unique tour instances managed
+                    perf.customerMix.adults += tour.totalAdults || 0;
+                    perf.customerMix.seniors += tour.totalSeniors || 0;
+                    perf.customerMix.children += tour.totalChildren || 0;
+                });
+                
+                // Calculate derived metrics for each manager
+                Object.keys(this.appState.managerPerformance).forEach(manager => {
+                    const perf = this.appState.managerPerformance[manager];
+                    perf.averageRevenue = perf.totalRevenue / perf.totalTours || 0; // Avg revenue per entry
+                    perf.averageParticipants = perf.totalParticipants / perf.totalTours || 0; // Avg participants per entry
+                    perf.tourTypeCount = perf.tourTypes.size; // Count of unique tour types managed
+                    perf.uniqueToursCount = perf.uniqueTours.size; // Count of unique tour instances (tour name + date)
+                    perf.averageRevenuePerUniqueTour = perf.totalRevenue / perf.uniqueToursCount || 0; // Avg revenue per unique tour instance
+                });
+            },
+
+            calculateTourTypeAnalysis: function() {
+                this.appState.tourTypeAnalysis = {};
+                
+                this.appState.filteredData.forEach(tour => {
+                    const tourType = tour.tourName;
+                    if (!tourType) return; // Skip records without a tour name
+                    
+                    if (!this.appState.tourTypeAnalysis[tourType]) {
+                        this.appState.tourTypeAnalysis[tourType] = {
+                            totalRevenue: 0,
+                            totalTours: 0, // Total entries of this tour type
+                            uniqueTours: new Set(),
+                            managers: new Set()
+                        };
+                    }
+                    
+                    const analysis = this.appState.tourTypeAnalysis[tourType];
+                    analysis.totalRevenue += tour.revenue || 0;
+                    analysis.totalTours += 1;
+                    analysis.uniqueTours.add(tour.uniqueTourId);
+                    analysis.managers.add(tour.tourManager);
+                });
+                
+                Object.keys(this.appState.tourTypeAnalysis).forEach(tourType => {
+                    const analysis = this.appState.tourTypeAnalysis[tourType];
+                    analysis.averageRevenue = analysis.totalRevenue / analysis.totalTours || 0;
+                    analysis.uniqueToursCount = analysis.uniqueTours.size;
+                    analysis.managerCount = analysis.managers.size;
+                    analysis.averageRevenuePerUniqueTour = analysis.totalRevenue / analysis.uniqueToursCount || 0;
+                });
+            },
+
+            // --- Filter Management ---
+            updateFilterOptions: function() {
+                const managerFilter = document.getElementById('managerFilter');
+                const managerSelector = document.getElementById('managerSelector');
+                const tourTypeFilter = document.getElementById('tourTypeFilter');
+                
+                const managers = Object.keys(this.appState.managerPerformance).sort();
+                const tourTypes = Object.keys(this.appState.tourTypeAnalysis).sort();
+                
+                // Preserve current selections if values still exist, otherwise reset to 'all'
+                const currentManagerFilter = managerFilter.value;
+                const currentManagerSelector = managerSelector.value;
+                const currentTourTypeFilter = tourTypeFilter.value;
+
+                managerFilter.innerHTML = '<option value="all">All Managers</option>';
+                managerSelector.innerHTML = '<option value="">Select Manager</option>';
+                managers.forEach(manager => {
+                    managerFilter.innerHTML += `<option value="${manager}">${manager}</option>`;
+                    managerSelector.innerHTML += `<option value="${manager}">${manager}</option>`;
+                });
+                // Attempt to restore selection
+                if (managers.includes(currentManagerFilter)) managerFilter.value = currentManagerFilter;
+                if (managers.includes(currentManagerSelector)) managerSelector.value = currentManagerSelector;
+
+                tourTypeFilter.innerHTML = '<option value="all">All Tour Types</option>';
+                tourTypes.forEach(tourType => {
+                    tourTypeFilter.innerHTML += `<option value="${tourType}">${tourType}</option>`;
+                });
+                // Attempt to restore selection
+                if (tourTypes.includes(currentTourTypeFilter)) tourTypeFilter.value = currentTourTypeFilter;
+            },
+
+            applyFilters: function() {
+                const dateRange = document.getElementById('dateRange').value;
+                const managerFilter = document.getElementById('managerFilter').value;
+                const tourTypeFilter = document.getElementById('tourTypeFilter').value;
+                
+                this.appState.filteredData = this.appState.rawData.filter(tour => {
+                    // Date filter logic
+                    if (dateRange !== 'all') {
+                        const tourDate = new Date(tour.tourDate);
+                        const now = new Date();
+                        const startOfYear = new Date(now.getFullYear(), 0, 1);
+                        // Calculate start of current quarter
+                        const currentMonth = now.getMonth();
+                        const startOfQuarter = new Date(now.getFullYear(), Math.floor(currentMonth / 3) * 3, 1);
+                        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                        
+                        switch(dateRange) {
+                            case 'ytd': // Year to Date
+                                if (tourDate < startOfYear) return false;
+                                break;
+                            case 'qtd': // Quarter to Date
+                                if (tourDate < startOfQuarter) return false;
+                                break;
+                            case 'mtd': // Month to Date
+                                if (tourDate < startOfMonth) return false;
+                                break;
+                        }
+                    }
+                    
+                    // Manager filter logic
+                    if (managerFilter !== 'all' && tour.tourManager !== managerFilter) {
+                        return false;
+                    }
+                    
+                    // Tour type filter logic
+                    if (tourTypeFilter !== 'all' && tour.tourName !== tourTypeFilter) {
+                        return false;
+                    }
+                    
+                    return true;
+                });
+                
+                this.processData(); // Re-process data with applied filters
+                this.updateDashboards(); // Refresh dashboards
+            },
+
+            resetFilters: function() {
+                document.getElementById('dateRange').value = 'all';
+                document.getElementById('managerFilter').value = 'all';
+                document.getElementById('tourTypeFilter').value = 'all';
+                this.applyFilters();
+                this.showAlertModal('Filters Reset', 'All data filters have been reset.');
+            },
+
+            // --- Navigation & Dashboard Switching ---
+            switchView: function(view) {
+                // Update navigation tabs' active state
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                document.getElementById(`${view}Tab`).classList.add('active');
+                
+                // Show/hide dashboards
+                document.querySelectorAll('.dashboard').forEach(dashboard => {
+                    dashboard.classList.remove('active');
+                });
+                document.getElementById(`${view}Dashboard`).classList.add('active');
+                
+                // Trigger updates for the activated dashboard after a short delay for animation
+                setTimeout(() => {
+                    switch(view) {
+                        case 'executive':
+                            this.updateExecutiveDashboard();
+                            break;
+                        case 'manager':
+                            this.updateManagerDashboard(); // Will show "Select Manager" if none chosen
+                            break;
+                        case 'operational':
+                            this.updateOperationalDashboard();
+                            break;
+                        case 'dataTable':
+                            this.updateDataTableDashboard();
+                            break;
+                        // Help dashboard doesn't need specific data updates on switch
+                    }
+                }, 100);
+            },
+
+            updateDashboards: function() {
+                const activeTab = document.querySelector('.nav-tab.active');
+                if (!activeTab) return; // No active tab found
+
+                const viewId = activeTab.id.replace('Tab', ''); // e.g., 'executive' from 'executiveTab'
+                this.switchView(viewId); // This call already handles the update logic.
+            },
+
+            resetCurrentView: function() {
+                const activeViewTab = document.querySelector('.nav-tab.active');
+                if (!activeViewTab) return;
+
+                const viewName = activeViewTab.id.replace('Tab', '');
+                switch(viewName) {
+                    case 'executive':
+                        this.resetExecutiveDashboard();
+                        break;
+                    case 'manager':
+                        this.resetManagerDashboard();
+                        break;
+                    case 'operational':
+                        this.resetOperationalDashboard();
+                        break;
+                    case 'dataTable':
+                        this.clearTableSearch();
+                        this.showAlertModal('Table Reset', 'Data table search and sorting have been reset.');
+                        break;
+                    case 'help':
+                        this.showAlertModal('Info', 'The Help & Tips section does not have a reset function.');
+                        break;
+                    default:
+                        console.warn('No reset function defined for this view.');
+                }
+            },
+
+            resetExecutiveDashboard: function() {
+                this.resetFilters(); // Reset filters first
+                // Then re-update the dashboard with new filtered (or all) data
+                setTimeout(() => this.updateExecutiveDashboard(), 100);
+                this.showAlertModal('Dashboard Reset', 'Executive Dashboard has been reset.');
+            },
+
+            resetManagerDashboard: function() {
+                document.getElementById('managerSelector').value = ''; // Clear manager selection
+                this.updateManagerDashboard(); // Update to show "select manager" message
+                this.showAlertModal('Dashboard Reset', 'Manager Performance Dashboard has been reset.');
+            },
+
+            resetOperationalDashboard: function() {
+                this.resetFilters(); // Reset filters first
+                // Then re-update the dashboard
+                setTimeout(() => this.updateOperationalDashboard(), 100);
+                this.showAlertModal('Dashboard Reset', 'Operational Intelligence Dashboard has been reset.');
+            },
+
+            // --- Dashboard Update Functions ---
+            updateExecutiveDashboard: function() {
+                const { filteredData, managerPerformance, uniqueTours } = this.appState;
+
+                // Basic calculations
+                const totalRevenue = filteredData.reduce((sum, tour) => sum + (tour.revenue || 0), 0);
+                const totalUniqueTours = uniqueTours.size;
+                const uniqueManagers = new Set(filteredData.map(tour => tour.tourManager)).size;
+                const avgRevenuePerTourEntry = totalRevenue / filteredData.length || 0; // Average per entry, not unique tour
+
+                // Enhanced KPI calculations
+                const totalParticipants = filteredData.reduce((sum, tour) => sum + (tour.totalParticipants || 0), 0);
+                const revenuePerParticipant = totalParticipants > 0 ? totalRevenue / totalParticipants : 0;
+                const avgGroupSize = totalUniqueTours > 0 ? totalParticipants / totalUniqueTours : 0;
+                
+                // Find top performer
+                const managersByRevenue = Object.entries(managerPerformance)
+                    .sort(([,a], [,b]) => b.totalRevenue - a.totalRevenue);
+                const topManager = managersByRevenue[0];
+                
+                // Market concentration (top 3 managers' share)
+                const top3Revenue = managersByRevenue.slice(0, 3).reduce((sum, [,perf]) => sum + perf.totalRevenue, 0);
+                const marketConcentration = totalRevenue > 0 ? (top3Revenue / totalRevenue) * 100 : 0;
+                
+                // Customer mix analysis
+                const totalAdults = filteredData.reduce((sum, tour) => sum + (tour.totalAdults || 0), 0);
+                const totalSeniors = filteredData.reduce((sum, tour) => sum + (tour.totalSeniors || 0), 0);
+                const totalChildren = filteredData.reduce((sum, tour) => sum + (tour.totalChildren || 0), 0);
+                
+                const adultPercentage = totalParticipants > 0 ? (totalAdults / totalParticipants) * 100 : 0;
+                const seniorPercentage = totalParticipants > 0 ? (totalSeniors / totalParticipants) * 100 : 0;
+                const childPercentage = totalParticipants > 0 ? (totalChildren / totalParticipants) * 100 : 0;
+                
+                // Determine primary customer segment
+                let primarySegment = { name: 'N/A', percentage: 0 };
+                if (totalParticipants > 0) {
+                    if (adultPercentage >= seniorPercentage && adultPercentage >= childPercentage) {
+                        primarySegment = { name: 'Adults', percentage: adultPercentage };
+                    } else if (seniorPercentage >= childPercentage) {
+                        primarySegment = { name: 'Seniors', percentage: seniorPercentage };
+                    } else {
+                        primarySegment = { name: 'Children', percentage: childPercentage };
+                    }
+                }
+                
+                // Tour frequency per manager
+                const avgToursPerManager = uniqueManagers > 0 ? totalUniqueTours / uniqueManagers : 0;
+                
+                // Booking diversity (average tour types per manager)
+                const totalTourTypesManaged = Object.values(managerPerformance).reduce((sum, perf) => sum + perf.tourTypeCount, 0);
+                const avgTourTypesPerManager = uniqueManagers > 0 ? totalTourTypesManaged / uniqueManagers : 0;
+                
+                // Performance variance (coefficient of variation of manager revenues)
+                const managerRevenues = Object.values(managerPerformance).map(perf => perf.totalRevenue);
+                const avgManagerRevenue = managerRevenues.length > 0 ? managerRevenues.reduce((a, b) => a + b, 0) / managerRevenues.length : 0;
+                let coefficientOfVariation = 0;
+                if (managerRevenues.length > 1 && avgManagerRevenue > 0) {
+                    const variance = managerRevenues.reduce((sum, rev) => sum + Math.pow(rev - avgManagerRevenue, 2), 0) / managerRevenues.length;
+                    const stdDev = Math.sqrt(variance);
+                    coefficientOfVariation = (stdDev / avgManagerRevenue) * 100;
+                }
+                
+                // Update basic metrics
+                document.getElementById('totalRevenue').textContent = `$${totalRevenue.toLocaleString()}`;
+                document.getElementById('totalTours').textContent = totalUniqueTours.toLocaleString();
+                document.getElementById('totalManagers').textContent = uniqueManagers;
+                document.getElementById('avgRevenue').textContent = `$${Math.round(avgRevenuePerTourEntry).toLocaleString()}`;
+                
+                // Update enhanced metrics
+                document.getElementById('revenuePerParticipant').textContent = `$${Math.round(revenuePerParticipant).toLocaleString()}`;
+                document.getElementById('avgGroupSize').textContent = (Math.round(avgGroupSize * 10) / 10).toLocaleString(); // One decimal place
+                
+                if (topManager) {
+                    document.getElementById('topManagerRevenue').textContent = `$${topManager[1].totalRevenue.toLocaleString()}`;
+                    document.getElementById('topManagerNameText').textContent = topManager[0].split(' ')[0]; // Show first name
+                } else {
+                    document.getElementById('topManagerRevenue').textContent = `$0`;
+                    document.getElementById('topManagerNameText').textContent = `N/A`;
+                }
+                
+                document.getElementById('marketConcentration').textContent = `${Math.round(marketConcentration)}%`;
+                document.getElementById('customerMixPrimary').textContent = `${Math.round(primarySegment.percentage)}%`;
+                document.getElementById('customerMixText').textContent = primarySegment.name;
+                document.getElementById('tourFrequency').textContent = (Math.round(avgToursPerManager * 10) / 10).toLocaleString();
+                document.getElementById('bookingDiversity').textContent = (Math.round(avgTourTypesPerManager * 10) / 10).toLocaleString();
+                document.getElementById('performanceVariance').textContent = `${Math.round(coefficientOfVariation)}%`;
+                
+                // Update status indicators based on performance (example thresholds)
+                this.updateMetricStatus('revenuePerParticipantChange', revenuePerParticipant, 100, 'Efficiency', false); // Higher is better
+                this.updateMetricStatus('concentrationChange', marketConcentration, 70, 'Distribution', true); // Lower is better
+                this.updateMetricStatus('varianceChange', coefficientOfVariation, 30, 'Consistency', true); // Lower is better
+                
+                // Update charts and lists
+                this.updateManagerPerformanceChart();
+                this.updateTourTypeChart();
+                this.updateTopPerformersList();
+                this.updateStrategicInsights();
+                this.updateDataSourcesSummary();
+                this.updateRevenueCalculationDemo();
+            },
+
+            // Helper function to update metric status indicators
+            updateMetricStatus: function(elementId, value, threshold, label, lowerIsBetter = false) {
+                const element = document.getElementById(elementId);
+                if (!element) return;
+                
+                let isGood;
+                let iconClass;
+                let statusClass;
+
+                if (lowerIsBetter) {
+                    if (value <= threshold * 0.8) { // Significantly better
+                        isGood = true; iconClass = 'fa-arrow-down'; statusClass = 'positive'; // Down arrow for lower is better
+                    } else if (value <= threshold) { // Within good range
+                        isGood = true; iconClass = 'fa-check'; statusClass = 'good';
+                    } else if (value <= threshold * 1.2) { // Slightly above, acceptable
+                        isGood = false; iconClass = 'fa-minus'; statusClass = 'neutral';
+                    } else { // Poor
+                        isGood = false; iconClass = 'fa-arrow-up'; statusClass = 'negative'; // Up arrow for higher is worse
+                    }
+                } else { // Higher is better
+                    if (value >= threshold * 1.2) { // Significantly better
+                        isGood = true; iconClass = 'fa-arrow-up'; statusClass = 'positive';
+                    } else if (value >= threshold) { // Within good range
+                        isGood = true; iconClass = 'fa-check'; statusClass = 'good';
+                    } else if (value >= threshold * 0.8) { // Slightly below, acceptable
+                        isGood = false; iconClass = 'fa-minus'; statusClass = 'neutral';
+                    } else { // Poor
+                        isGood = false; iconClass = 'fa-arrow-down'; statusClass = 'negative';
+                    }
+                }
+                
+                element.className = `metric-change status-${statusClass}`;
+                element.innerHTML = `<i class="fas ${iconClass}"></i><span>${label}</span>`;
+            },
+
+            updateManagerDashboard: function() {
+                const selectedManager = document.getElementById('managerSelector').value;
+                const managerMetricsContainer = document.getElementById('managerMetrics');
+
+                if (!selectedManager || !this.appState.managerPerformance[selectedManager]) {
+                    managerMetricsContainer.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-medium); font-size: 1.1rem; background: var(--gray-light); border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+                            <i class="fas fa-info-circle" style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary-blue);"></i>
+                            <p>Please select a manager from the dropdown above to view detailed performance analytics.</p>
+                        </div>
+                    `;
+                    // Destroy manager-specific charts when no manager is selected
+                    if (this.appState.charts.customerDemographics) this.appState.charts.customerDemographics.destroy();
+                    if (this.appState.charts.performanceRadar) this.appState.charts.performanceRadar.destroy();
+                    document.getElementById('managerRecommendations').innerHTML = ''; // Clear recommendations
+                    return;
+                }
+                
+                const perf = this.appState.managerPerformance[selectedManager];
+                
+                // Calculate performance status relative to all managers
+                const allManagerRevenues = Object.values(this.appState.managerPerformance).map(p => p.averageRevenuePerUniqueTour);
+                const avgRevenuePerUniqueTourOverall = allManagerRevenues.length > 0 ? allManagerRevenues.reduce((sum, p) => sum + p, 0) / allManagerRevenues.length : 0;
+
+                let revenueStatus = 'average';
+                if (perf.averageRevenuePerUniqueTour > avgRevenuePerUniqueTourOverall * 1.2) {
+                    revenueStatus = 'excellent';
+                } else if (perf.averageRevenuePerUniqueTour > avgRevenuePerUniqueTourOverall * 0.8) {
+                    revenueStatus = 'good';
+                } else if (perf.averageRevenuePerUniqueTour < avgRevenuePerUniqueTourOverall * 0.6) {
+                    revenueStatus = 'poor';
+                }
+                
+                const metricsHTML = `
+                    <div class="metric-card revenue">
+                        <div class="metric-header">
+                            <div class="metric-title">Total Revenue</div>
+                            <i class="fas fa-dollar-sign metric-icon" style="color: var(--primary-green);"></i>
+                        </div>
+                        <div class="metric-value">$${perf.totalRevenue.toLocaleString()}</div>
+                        <div class="status-indicator status-${revenueStatus}">
+                            <i class="fas fa-circle"></i> ${revenueStatus.toUpperCase()}
+                        </div>
+                    </div>
+                    <div class="metric-card tours">
+                        <div class="metric-header">
+                            <div class="metric-title">Unique Tours</div>
+                            <i class="fas fa-route metric-icon" style="color: var(--primary-blue);"></i>
+                        </div>
+                        <div class="metric-value">${perf.uniqueToursCount}</div>
+                        <div class="metric-change positive">
+                            <i class="fas fa-calendar"></i>
+                            <span>${perf.totalTours} total entries</span>
+                        </div>
+                    </div>
+                    <div class="metric-card average">
+                        <div class="metric-header">
+                            <div class="metric-title">Avg Revenue/Unique Tour</div>
+                            <i class="fas fa-chart-line metric-icon" style="color: var(--primary-purple);"></i>
+                        </div>
+                        <div class="metric-value">$${Math.round(perf.averageRevenuePerUniqueTour).toLocaleString()}</div>
+                        <div class="metric-change ${revenueStatus === 'excellent' ? 'positive' : revenueStatus === 'good' ? 'good' : revenueStatus === 'average' ? 'neutral' : 'negative'}">
+                            <i class="fas fa-${revenueStatus === 'excellent' ? 'arrow-up' : revenueStatus === 'good' ? 'check' : revenueStatus === 'average' ? 'minus' : 'arrow-down'}"></i>
+                            <span>vs team avg $${Math.round(avgRevenuePerUniqueTourOverall).toLocaleString()}</span>
+                        </div>
+                    </div>
+                    <div class="metric-card managers">
+                        <div class="metric-header">
+                            <div class="metric-title">Tour Types Managed</div>
+                            <i class="fas fa-award metric-icon" style="color: var(--primary-orange);"></i>
+                        </div>
+                        <div class="metric-value">${perf.tourTypeCount}</div>
+                        <div class="metric-change ${perf.tourTypeCount >= 3 ? 'positive' : perf.tourTypeCount >= 2 ? 'neutral' : 'negative'}">
+                            <i class="fas fa-${perf.tourTypeCount >= 3 ? 'star' : perf.tourTypeCount >= 2 ? 'check' : 'exclamation'}"></i>
+                            <span>${perf.tourTypeCount >= 3 ? 'Diverse' : perf.tourTypeCount >= 2 ? 'Moderate' : 'Limited'}</span>
+                        </div>
+                    </div>
+                `;
+                
+                managerMetricsContainer.innerHTML = metricsHTML;
+                
+                // Update manager-specific charts and recommendations
+                this.updateCustomerDemographicsChart(selectedManager);
+                this.updatePerformanceRadarChart(selectedManager);
+                this.updateManagerRecommendations(selectedManager);
+            },
+
+            updateOperationalDashboard: function() {
+                this.updateEfficiencyChart();
+                this.updateTourAssignmentOptimization();
+                this.updatePerformanceCoachingMatrix();
+            },
+
+            // --- Chart Initialization & Updates ---
+            initializeCharts: function() {
+                // Initialize all chart canvases, destroying existing instances if they exist
+                const chartConfigs = [
+                    { id: 'managerPerformanceChart', type: 'bar', datasetLabel: 'Revenue', colors: ['rgba(59, 130, 246, 0.8)'], borderColor: '#2563eb', formatter: (value) => '$' + Math.round(value).toLocaleString(), datalabels: true },
+                    { id: 'tourTypeChart', type: 'doughnut', colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'], borderColor: '#ffffff', datalabels: true, datalabelsPercentage: true },
+                    { id: 'customerDemographicsChart', type: 'pie', colors: ['#3b82f6', '#10b981', '#f59e0b'], borderColor: '#ffffff', datalabels: true, datalabelsPercentage: false },
+                    { id: 'performanceRadarChart', type: 'radar', colors: ['rgba(59, 130, 246, 0.2)'], borderColor: '#3b82f6', datalabels: false },
+                    { id: 'efficiencyChart', type: 'scatter', colors: ['#3b82f6'], borderColor: '#2563eb', datalabels: true }
+                ];
+
+                chartConfigs.forEach(config => {
+                    const ctx = document.getElementById(config.id);
+                    if (ctx) {
+                        // Destroy existing chart instance if it exists
+                        if (this.appState.charts[config.id.replace('Chart', '')]) {
+                            this.appState.charts[config.id.replace('Chart', '')].destroy();
+                        }
+                        
+                        const commonOptions = {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: config.type !== 'bar' && config.type !== 'radar' && config.type !== 'scatter',
+                                    position: 'bottom',
+                                    labels: { padding: 20, usePointStyle: true }
+                                },
+                                datalabels: {
+                                    display: config.datalabels,
+                                    formatter: (value, ctx) => {
+                                        if (config.datalabelsPercentage) {
+                                            const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = Math.round((value / sum) * 100);
+                                            return percentage > 5 ? `${percentage}%` : ''; // Only show if percentage > 5
+                                        }
+                                        return config.formatter ? config.formatter(value) : Math.round(value).toLocaleString();
+                                    },
+                                    color: config.type === 'doughnut' || config.type === 'pie' ? '#ffffff' : '#1f2937',
+                                    font: { weight: 'bold' },
+                                    anchor: config.type === 'bar' ? 'end' : 'center',
+                                    align: config.type === 'bar' ? 'top' : 'center',
+                                    offset: config.type === 'scatter' ? 10 : 0,
+                                }
+                            }
+                        };
+
+                        let specificOptions = {};
+                        if (config.type === 'bar') {
+                            specificOptions = {
+                                scales: {
+                                    y: { beginAtZero: true, ticks: { callback: (value) => '$' + value.toLocaleString() }, grid: { color: 'rgba(0,0,0,0.1)' } },
+                                    x: { grid: { display: false } }
+                                }
+                            };
+                        } else if (config.type === 'radar') {
+                            specificOptions = {
+                                scales: {
+                                    r: { beginAtZero: true, max: 10, ticks: { stepSize: 2 }, grid: { color: 'rgba(0,0,0,0.1)' } }
+                                }
+                            };
+                        } else if (config.type === 'scatter') {
+                            specificOptions = {
+                                plugins: {
+                                    tooltip: {
+                                        callbacks: {
+                                            title: (context) => context[0].raw.label,
+                                            label: (context) => [`Unique Tours: ${context.parsed.x}`, `Total Revenue: $${context.parsed.y.toLocaleString()}`]
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: { title: { display: true, text: 'Unique Tours Conducted', font: { weight: 'bold' } }, grid: { color: 'rgba(0,0,0,0.1)' } },
+                                    y: { title: { display: true, text: 'Total Revenue Generated', font: { weight: 'bold' } }, ticks: { callback: (value) => '$' + value.toLocaleString() }, grid: { color: 'rgba(0,0,0,0.1)' } }
+                                }
+                            };
+                        }
+
+                        this.appState.charts[config.id.replace('Chart', '')] = new Chart(ctx, {
+                            type: config.type,
+                            data: {
+                                labels: [],
+                                datasets: [{
+                                    label: config.datasetLabel,
+                                    data: [],
+                                    backgroundColor: config.colors[0], // Use first color for single-color charts
+                                    borderColor: config.borderColor,
+                                    borderWidth: config.type === 'doughnut' || config.type === 'pie' ? 3 : 2,
+                                    borderRadius: config.type === 'bar' ? 8 : 0,
+                                    borderSkipped: config.type === 'bar' ? false : undefined,
+                                    pointRadius: config.type === 'scatter' ? 8 : undefined,
+                                    pointHoverRadius: config.type === 'scatter' ? 12 : undefined,
+                                    pointBackgroundColor: config.type === 'radar' ? config.borderColor : undefined,
+                                    pointBorderColor: config.type === 'radar' ? '#ffffff' : undefined,
+                                    pointBorderWidth: config.type === 'radar' ? 2 : undefined,
+                                }]
+                            },
+                            options: { ...commonOptions, ...specificOptions }
+                        });
+                    }
+                });
+            },
+
+            updateManagerPerformanceChart: function() {
+                const chart = this.appState.charts.managerPerformance;
+                if (!chart) return;
+                
+                const managerData = Object.entries(this.appState.managerPerformance)
+                    .sort(([,a], [,b]) => b.totalRevenue - a.totalRevenue)
+                    .slice(0, 10); // Top 10 managers
+                
+                const labels = managerData.map(([name]) => name.length > 12 ? `${name.substring(0, 12)}...` : name);
+                const data = managerData.map(([,perf]) => perf.totalRevenue);
+                
+                // Color code bars based on performance relative to average of displayed managers
+                const avgRevenueForChart = data.reduce((a, b) => a + b, 0) / data.length || 0;
+                const colors = data.map(value => {
+                    if (value > avgRevenueForChart * 1.3) return '#10b981'; // Excellent - Green
+                    if (value > avgRevenueForChart * 1.1) return '#3b82f6'; // Good - Blue
+                    if (value > avgRevenueForChart * 0.9) return '#f59e0b'; // Average - Orange
+                    return '#ef4444'; // Needs Improvement - Red
+                });
+                
+                chart.data.labels = labels;
+                chart.data.datasets[0].data = data;
+                chart.data.datasets[0].backgroundColor = colors;
+                chart.update();
+            },
+
+            updateTourTypeChart: function() {
+                const chart = this.appState.charts.tourType;
+                if (!chart) return;
+                
+                const tourTypeData = Object.entries(this.appState.tourTypeAnalysis)
+                    .sort(([,a], [,b]) => b.totalRevenue - a.totalRevenue);
+                
+                const labels = tourTypeData.map(([name]) => name);
+                const data = tourTypeData.map(([,analysis]) => analysis.totalRevenue);
+
+                // Use a diverse set of colors for the doughnut chart
+                const backgroundColors = [
+                    '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
+                    '#8b5cf6', '#06b6d4', '#f97316', '#84cc16',
+                    '#64748b', '#dc2626', '#1d4ed8', '#059669'
+                ];
+                
+                chart.data.labels = labels;
+                chart.data.datasets[0].data = data;
+                chart.data.datasets[0].backgroundColor = backgroundColors.slice(0, labels.length); // Cycle through colors
+                chart.update();
+            },
+
+            updateCustomerDemographicsChart: function(manager) {
+                const chart = this.appState.charts.customerDemographics;
+                if (!chart || !this.appState.managerPerformance[manager]) return;
+                
+                const perf = this.appState.managerPerformance[manager];
+                const data = [
+                    perf.customerMix.adults,
+                    perf.customerMix.seniors,
+                    perf.customerMix.children
+                ];
+                
+                chart.data.labels = ['Adults', 'Seniors', 'Children'];
+                chart.data.datasets[0].data = data;
+                chart.update();
+            },
+
+            updatePerformanceRadarChart: function(manager) {
+                const chart = this.appState.charts.performanceRadar;
+                if (!chart || !this.appState.managerPerformance[manager]) return;
+                
+                const perf = this.appState.managerPerformance[manager];
+                
+                // Calculate max values across all managers for normalization
+                const allManagers = Object.values(this.appState.managerPerformance);
+                const maxRevenue = Math.max(...allManagers.map(p => p.averageRevenue), 1); // Avoid division by zero
+                const maxTourTypes = Math.max(...allManagers.map(p => p.tourTypeCount), 1);
+                const maxParticipants = Math.max(...allManagers.map(p => p.averageParticipants), 1);
+                const maxUniqueTours = Math.max(...allManagers.map(p => p.uniqueToursCount), 1);
+                
+                // Normalize manager's performance to a 0-10 scale
+                const data = [
+                    (perf.averageRevenue / maxRevenue) * 10,
+                    (perf.tourTypeCount / maxTourTypes) * 10,
+                    (perf.averageParticipants / maxParticipants) * 10,
+                    (perf.uniqueToursCount / maxUniqueTours) * 10
+                ];
+                
+                chart.data.labels = ['Revenue Excellence', 'Tour Diversity', 'Customer Engagement', 'Tour Frequency'];
+                chart.data.datasets[0].data = data;
+                chart.update();
+            },
+
+            updateEfficiencyChart: function() {
+                const chart = this.appState.charts.efficiency;
+                if (!chart) return;
+                
+                const managerData = Object.entries(this.appState.managerPerformance).map(([name, perf]) => ({
+                    x: perf.uniqueToursCount,
+                    y: perf.totalRevenue,
+                    label: name
+                }));
+                
+                chart.data.datasets[0].data = managerData;
+                chart.update();
+            },
+
+            // --- Content Update Functions for Executive Dashboard ---
+            updateTopPerformersList: function() {
+                const topPerformers = Object.entries(this.appState.managerPerformance)
+                    .sort(([,a], [,b]) => b.totalRevenue - a.totalRevenue)
+                    .slice(0, 5); // Display top 5 performers
+                
+                const avgRevenueOverall = Object.values(this.appState.managerPerformance).reduce((sum, p) => sum + p.averageRevenue, 0) / Object.keys(this.appState.managerPerformance).length || 0;
+
+                const listHTML = topPerformers.map(([name, perf], index) => {
+                    let status = 'average';
+                    if (perf.averageRevenue > avgRevenueOverall * 1.3) {
+                        status = 'excellent';
+                    } else if (perf.averageRevenue > avgRevenueOverall * 1.1) {
+                        status = 'good';
+                    } else if (perf.averageRevenue < avgRevenueOverall * 0.7) {
+                        status = 'poor';
+                    }
+                    
+                    return `
+                        <div class="performer-item">
+                            <div class="performer-info">
+                                <div class="performer-rank ${index < 3 ? 'rank-' + (index + 1) : 'rank-other'}">
+                                    ${index + 1}
+                                </div>
+                                <div class="performer-details">
+                                    <h4>${name}</h4>
+                                    <p>${perf.uniqueToursCount} unique tours &bull; ${perf.totalTours} total entries</p>
+                                </div>
+                            </div>
+                            <div class="performer-stats">
+                                <div class="performer-revenue">$${perf.totalRevenue.toLocaleString()}</div>
+                                <div class="performer-average">$${Math.round(perf.averageRevenuePerUniqueTour).toLocaleString()}/unique tour</div>
+                                <div class="status-indicator status-${status}">
+                                    <i class="fas fa-circle"></i> ${status.toUpperCase()}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                document.getElementById('topPerformersList').innerHTML = listHTML || '<p style="text-align: center; color: var(--text-medium);">No manager data available.</p>';
+            },
+
+            updateStrategicInsights: function() {
+                const insights = this.generateInsights();
+                
+                const insightsHTML = insights.map(insight => `
+                    <div class="insight-item ${insight.type}">
+                        <div class="insight-title">
+                            <i class="fas fa-${insight.icon}"></i>
+                            ${insight.title}
+                        </div>
+                        <div class="insight-description">${insight.description}</div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('strategicInsights').innerHTML = insightsHTML || '<p style="text-align: center; color: var(--text-medium);">No insights available based on current data.</p>';
+            },
+
+            generateInsights: function() {
+                const insights = [];
+                const managers = Object.entries(this.appState.managerPerformance);
+                
+                if (managers.length === 0) return insights;
+                
+                const totalRevenueOverall = this.appState.filteredData.reduce((sum, tour) => sum + (tour.revenue || 0), 0);
+                const totalParticipantsOverall = this.appState.filteredData.reduce((sum, tour) => sum + (tour.totalParticipants || 0), 0);
+                const avgRevenuePerUniqueTourOverall = managers.length > 0 ? Object.values(this.appState.managerPerformance).reduce((sum, p) => sum + p.averageRevenuePerUniqueTour, 0) / managers.length : 0;
+
+                // Insight 1: Revenue Champion Performance
+                const topManager = managers.reduce((a, b) => a[1].totalRevenue > b[1].totalRevenue ? a : b);
+                const topManagerShare = totalRevenueOverall > 0 ? (topManager[1].totalRevenue / totalRevenueOverall) * 100 : 0;
+                insights.push({
+                    type: 'success',
+                    icon: 'trophy',
+                    title: 'Revenue Champion Performance',
+                    description: `${topManager[0]} leads with $${topManager[1].totalRevenue.toLocaleString()} (${Math.round(topManagerShare)}% of total revenue) across ${topManager[1].uniqueToursCount} unique tours, averaging $${Math.round(topManager[1].averageRevenuePerUniqueTour).toLocaleString()} per tour.`
+                });
+                
+                // Insight 2: Monetization Efficiency
+                const revenuePerParticipantOverall = totalParticipantsOverall > 0 ? totalRevenueOverall / totalParticipantsOverall : 0;
+                if (revenuePerParticipantOverall > 90) { // Example threshold
+                    insights.push({
+                        type: 'success',
+                        icon: 'dollar-sign',
+                        title: 'Strong Monetization Performance',
+                        description: `Excellent revenue per participant at $${Math.round(revenuePerParticipantOverall)}. This indicates superior pricing and effective upselling capabilities across tours.`
+                    });
+                } else if (revenuePerParticipantOverall < 60 && revenuePerParticipantOverall > 0) {
+                    insights.push({
+                        type: 'danger',
+                        icon: 'exclamation-triangle',
+                        title: 'Revenue Optimization Critical',
+                        description: `Low revenue per participant ($${Math.round(revenuePerParticipantOverall)}) indicates pricing pressure. Focus on premium packages, upselling training, and value-added services to improve profitability.`
+                    });
+                }
+                
+                // Insight 3: Capacity Utilization
+                const avgGroupSizeOverall = this.appState.uniqueTours.size > 0 ? totalParticipantsOverall / this.appState.uniqueTours.size : 0;
+                if (avgGroupSizeOverall < 8 && avgGroupSizeOverall > 0) { // Example threshold
+                    insights.push({
+                        type: 'warning',
+                        icon: 'users',
+                        title: 'Capacity Utilization Opportunity',
+                        description: `Average group size of ${Math.round(avgGroupSizeOverall * 10) / 10} suggests underutilized capacity. Focus on marketing strategies to increase bookings per tour and improve operational efficiency.`
+                    });
+                } else if (avgGroupSizeOverall > 15) {
+                    insights.push({
+                        type: 'info',
+                        icon: 'chart-line',
+                        title: 'High Demand Indicator',
+                        description: `Strong average group size of ${Math.round(avgGroupSizeOverall * 10) / 10} indicates healthy demand. Consider premium pricing or additional tour times to maximize revenue potential.`
+                    });
+                }
+                
+                // Insight 4: Performance Consistency (Coefficient of Variation)
+                const managerRevenues = managers.map(([,perf]) => perf.totalRevenue);
+                let coefficientOfVariation = 0;
+                const avgManagerRevenue = managerRevenues.length > 0 ? managerRevenues.reduce((a, b) => a + b, 0) / managerRevenues.length : 0;
+                if (managerRevenues.length > 1 && avgManagerRevenue > 0) {
+                    const variance = managerRevenues.reduce((sum, rev) => sum + Math.pow(rev - avgManagerRevenue, 2), 0) / managerRevenues.length;
+                    const stdDev = Math.sqrt(variance);
+                    coefficientOfVariation = (stdDev / avgManagerRevenue) * 100;
+                }
+
+                if (coefficientOfVariation > 50) { // Example threshold for high variance
+                    insights.push({
+                        type: 'warning',
+                        icon: 'exclamation-circle',
+                        title: 'Performance Inconsistency Risk',
+                        description: `High performance variance (${Math.round(coefficientOfVariation)}%) indicates uneven skill distribution. Targeted coaching for lower performers is recommended to reduce operational risk.`
+                    });
+                } else if (coefficientOfVariation < 25 && coefficientOfVariation > 0) { // Example threshold for low variance
+                    insights.push({
+                        type: 'success',
+                        icon: 'check-circle',
+                        title: 'Consistent Team Performance',
+                        description: `Low performance variance (${Math.round(coefficientOfVariation)}%) indicates a well-balanced team with consistent service delivery across all managers.`
+                    });
+                }
+                
+                // Insight 5: Market Concentration
+                const top3Revenue = managers
+                    .sort(([,a], [,b]) => b.totalRevenue - a.totalRevenue)
+                    .slice(0, 3)
+                    .reduce((sum, [,perf]) => sum + perf.totalRevenue, 0);
+                const marketConcentration = totalRevenueOverall > 0 ? (top3Revenue / totalRevenueOverall) * 100 : 0;
+                
+                if (marketConcentration > 75) { // Example threshold for high concentration
+                    insights.push({
+                        type: 'warning',
+                        icon: 'chart-pie',
+                        title: 'High Revenue Concentration Risk',
+                        description: `Top 3 managers generate ${Math.round(marketConcentration)}% of revenue, creating operational dependency. Develop other managers to reduce business risk and improve resilience.`
+                    });
+                }
+                
+                // Insight 6: Customer Segment Specialization
+                const totalAdults = this.appState.filteredData.reduce((sum, tour) => sum + (tour.totalAdults || 0), 0);
+                const totalSeniors = this.appState.filteredData.reduce((sum, tour) => sum + (tour.totalSeniors || 0), 0);
+                const totalChildren = this.appState.filteredData.reduce((sum, tour) => sum + (tour.totalChildren || 0), 0);
+                
+                const adultPercentage = totalParticipantsOverall > 0 ? (totalAdults / totalParticipantsOverall) * 100 : 0;
+                const seniorPercentage = totalParticipantsOverall > 0 ? (totalSeniors / totalParticipantsOverall) * 100 : 0;
+                const childPercentage = totalParticipantsOverall > 0 ? (totalChildren / totalParticipantsOverall) * 100 : 0;
+                
+                const dominantSegment = Math.max(adultPercentage, seniorPercentage, childPercentage);
+                if (dominantSegment > 60 && totalParticipantsOverall > 0) {
+                    const segmentName = adultPercentage === dominantSegment ? 'adult' : 
+                                     seniorPercentage === dominantSegment ? 'senior' : 'children';
+                    insights.push({
+                        type: 'info',
+                        icon: 'users-cog',
+                        title: 'Market Segment Specialization',
+                        description: `Strong ${segmentName} market focus (${Math.round(dominantSegment)}% of customers). Consider specialized tours and targeted pricing strategies for this primary demographic.`
+                    });
+                }
+                
+                return insights;
+            },
+
+            updateDataSourcesSummary: function() {
+                const sourceFiles = {}; // Aggregates data by source file
+                let hasMultipleSources = false;
+                
+                this.appState.rawData.forEach(record => {
+                    const source = record.sourceFile || 'Sample Data';
+                    if (!sourceFiles[source]) {
+                        sourceFiles[source] = {
+                            fileName: source,
+                            recordCount: 0,
+                            revenue: 0,
+                            uniqueTours: new Set(),
+                            managers: new Set(),
+                            uploadDate: record.uploadDate || 'N/A' // Capture original upload date
+                        };
+                    }
+                    
+                    sourceFiles[source].recordCount++;
+                    sourceFiles[source].revenue += record.revenue || 0;
+                    sourceFiles[source].uniqueTours.add(record.uniqueTourId);
+                    sourceFiles[source].managers.add(record.tourManager);
+                });
+                
+                const sourceEntries = Object.values(sourceFiles);
+                hasMultipleSources = sourceEntries.length > 1;
+                
+                // Special message for sample data only
+                if (!hasMultipleSources && sourceEntries.length === 1 && sourceEntries[0].fileName === 'Sample Data') {
+                    document.getElementById('dataSourcesSummary').innerHTML = `
+                        <div class="insight-item info">
+                            <div class="insight-title">
+                                <i class="fas fa-info-circle"></i>
+                                Sample Data Active
+                            </div>
+                            <div class="insight-description">
+                                Currently displaying sample data for demonstration. Upload your CSV file(s) to see real analytics.
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const summaryHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+                        ${sourceEntries.map((source, index) => `
+                            <div class="insight-item ${index === 0 ? 'success' : 'info'}">
+                                <div class="insight-title">
+                                    <i class="fas fa-file-csv"></i>
+                                    ${source.fileName}
+                                    ${hasMultipleSources ? `<span class="status-indicator status-${index === 0 ? 'excellent' : 'good'}">Source ${index + 1}</span>` : ''}
+                                </div>
+                                <div class="insight-description">
+                                    <strong>${source.recordCount.toLocaleString()}</strong> records &bull; 
+                                    <strong>${source.uniqueTours.size.toLocaleString()}</strong> unique tours &bull; 
+                                    <strong>${source.managers.size.toLocaleString()}</strong> managers<br>
+                                    Revenue: <strong>$${source.revenue.toLocaleString()}</strong><br>
+                                    ${source.uploadDate !== 'N/A' ? `Uploaded: ${new Date(source.uploadDate).toLocaleDateString()}` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    ${hasMultipleSources ? `
+                        <div class="insight-item warning" style="margin-top: 1rem;">
+                            <div class="insight-title">
+                                <i class="fas fa-layer-group"></i>
+                                Bulk Data Analysis
+                            </div>
+                            <div class="insight-description">
+                                Analyzing <strong>${sourceEntries.length}</strong> data sources with 
+                                <strong>${this.appState.rawData.length.toLocaleString()}</strong> total records across 
+                                <strong>${this.appState.uniqueTours.size.toLocaleString()}</strong> unique tours. 
+                                Cross-file insights and patterns are automatically detected and included in recommendations.
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+                
+                document.getElementById('dataSourcesSummary').innerHTML = summaryHTML;
+            },
+
+            updateRevenueCalculationDemo: function() {
+                const recentTours = this.appState.rawData.slice(0, 3); // Get first few raw data entries
+                let demoHTML = '';
+
+                if (recentTours.length === 0) {
+                    demoHTML = `<p style="text-align: center; color: var(--text-medium);">No data to show revenue calculation demo.</p>`;
+                } else {
+                    demoHTML = `<p style="color: var(--text-medium); margin-bottom: 1rem;">Demonstrates how revenue is calculated for individual tour entries:</p>`;
+                    recentTours.forEach((tour, index) => {
+                        const adults = tour.totalAdults || 0;
+                        const seniors = tour.totalSeniors || 0;
+                        const children = tour.totalChildren || 0;
+                        const adultRate = tour.adultRate || 0;
+                        const seniorRate = tour.seniorRate || 0;
+                        const childRate = tour.childRate || 0;
+                        const revenue = tour.revenue || 0;
+
+                        demoHTML += `
+                            <div style="background: #f8fafc; border: 1px solid var(--gray-medium); border-radius: 10px; padding: 1rem; margin-bottom: 1rem;">
+                                <h4 style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.5rem;">Entry ${index + 1}: ${tour.tourName} by ${tour.tourManager}</h4>
+                                <p style="font-size: 0.9rem; color: var(--text-medium);">
+                                    (${adults} adults x $${adultRate.toFixed(2)}) + (${seniors} seniors x $${seniorRate.toFixed(2)}) + (${children} children x $${childRate.toFixed(2)})
+                                    <br>
+                                    = $${(adults * adultRate).toFixed(2)} + $${(seniors * seniorRate).toFixed(2)} + $${(children * childRate).toFixed(2)}
+                                    <br>
+                                    <strong>Total Revenue: $${revenue.toFixed(2)}</strong>
+                                </p>
+                            </div>
+                        `;
+                    });
+                }
+                document.getElementById('revenueCalculationDemo').innerHTML = demoHTML;
+            },
+
+            // --- Content Update Functions for Manager Dashboard ---
+            updateManagerRecommendations: function(manager) {
+                const recommendations = this.generateManagerRecommendations(manager);
+                
+                if (recommendations.length === 0) {
+                    document.getElementById('managerRecommendations').innerHTML = `
+                        <div class="insight-item success">
+                            <div class="insight-title"><i class="fas fa-check-circle"></i> Excellent Performance</div>
+                            <div class="insight-description">Performance is meeting or exceeding expectations. Continue current strategies and consider mentoring other team members.</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const recommendationsHTML = recommendations.map(rec => `
+                    <div class="insight-item ${rec.type}">
+                        <div class="insight-title">
+                            <i class="fas fa-${rec.icon}"></i>
+                            ${rec.title}
+                            <span class="status-indicator status-${rec.priority}">${rec.priority.toUpperCase()}</span>
+                        </div>
+                        <div class="insight-description">${rec.description}</div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('managerRecommendations').innerHTML = recommendationsHTML;
+            },
+
+            generateManagerRecommendations: function(manager) {
+                const perf = this.appState.managerPerformance[manager];
+                if (!perf) return [];
+                
+                const recommendations = [];
+                const allManagerUniqueTourRevenues = Object.values(this.appState.managerPerformance).map(p => p.averageRevenuePerUniqueTour);
+                const avgRevenuePerUniqueTourOverall = allManagerUniqueTourRevenues.length > 0 ? allManagerUniqueTourRevenues.reduce((sum, p) => sum + p, 0) / allManagerUniqueTourRevenues.length : 0;
+                
+                const allManagerTourTypeCounts = Object.values(this.appState.managerPerformance).map(p => p.tourTypeCount);
+                const avgTourTypesOverall = allManagerTourTypeCounts.length > 0 ? allManagerTourTypeCounts.reduce((sum, p) => sum + p, 0) / allManagerTourTypeCounts.length : 0;
+                
+                // Recommendation 1: Revenue optimization
+                if (perf.averageRevenuePerUniqueTour < avgRevenuePerUniqueTourOverall * 0.7 && avgRevenuePerUniqueTourOverall > 0) {
+                    recommendations.push({
+                        type: 'danger',
+                        priority: 'poor',
+                        icon: 'exclamation-triangle',
+                        title: 'Critical Revenue Enhancement Needed',
+                        description: `Revenue per unique tour ($${Math.round(perf.averageRevenuePerUniqueTour).toLocaleString()}) is significantly below team average ($${Math.round(avgRevenuePerUniqueTourOverall).toLocaleString()}). Immediate focus needed on pricing optimization, upselling techniques, and premium package promotion.`
+                    });
+                } else if (perf.averageRevenuePerUniqueTour < avgRevenuePerUniqueTourOverall * 0.9 && avgRevenuePerUniqueTourOverall > 0) {
+                    recommendations.push({
+                        type: 'warning',
+                        priority: 'average',
+                        icon: 'chart-line',
+                        title: 'Revenue Optimization Opportunity',
+                        description: `Revenue per unique tour ($${Math.round(perf.averageRevenuePerUniqueTour).toLocaleString()}) is below team average ($${Math.round(avgRevenuePerUniqueTourOverall).toLocaleString()}). Focus on upselling optional packages and premium experiences to increase tour value.`
+                    });
+                }
+                
+                // Recommendation 2: Tour diversification
+                if (perf.tourTypeCount < 2) {
+                    recommendations.push({
+                        type: 'warning',
+                        priority: 'average',
+                        icon: 'palette',
+                        title: 'Tour Portfolio Expansion',
+                        description: `Currently managing only ${perf.tourTypeCount} tour type(s). Cross-training on additional tour categories will increase versatility, booking opportunities, and risk diversification.`
+                    });
+                } else if (perf.tourTypeCount < avgTourTypesOverall * 0.8 && avgTourTypesOverall > 0) {
+                    recommendations.push({
+                        type: 'info',
+                        priority: 'good',
+                        icon: 'expand-arrows-alt',
+                        title: 'Moderate Diversification Opportunity',
+                        description: `Consider expanding tour portfolio. Currently managing ${perf.tourTypeCount} tour types vs team average of ${Math.round(avgTourTypesOverall)}. Additional specializations could increase revenue potential.`
+                    });
+                }
+                
+                // Recommendation 3: Customer engagement
+                const avgParticipantsOverall = Object.values(this.appState.managerPerformance).reduce((sum, p) => sum + p.averageParticipants, 0) / allManagers.length || 0;
+                if (perf.averageParticipants < avgParticipantsOverall * 0.8 && avgParticipantsOverall > 0) {
+                    recommendations.push({
+                        type: 'warning',
+                        priority: 'average',
+                        icon: 'users',
+                        title: 'Customer Engagement Enhancement',
+                        description: `Average of ${Math.round(perf.averageParticipants)} participants per tour entry is lower than team average. Focus on increasing group sizes through improved marketing, customer engagement strategies, and referral programs.`
+                    });
+                }
+                
+                // Recommendation 4: Efficiency recognition / Mentorship
+                if (perf.averageRevenuePerUniqueTour > avgRevenuePerUniqueTourOverall * 1.3 && avgRevenuePerUniqueTourOverall > 0) {
+                    recommendations.push({
+                        type: 'success',
+                        priority: 'excellent',
+                        icon: 'star',
+                        title: 'Outstanding Performance - Mentorship Opportunity',
+                        description: `Exceptional revenue per unique tour performance ($${Math.round(perf.averageRevenuePerUniqueTour).toLocaleString()}) makes this manager ideal for mentoring team members. Consider pairing with managers who need revenue optimization support.`
+                    });
+                } else if (perf.averageRevenuePerUniqueTour > avgRevenuePerUniqueTourOverall * 1.1 && avgRevenuePerUniqueTourOverall > 0) {
+                    recommendations.push({
+                        type: 'success',
+                        priority: 'good',
+                        icon: 'thumbs-up',
+                        title: 'Strong Performance',
+                        description: `Above-average revenue performance. Continue current strategies and consider sharing best practices with other team members for overall team improvement.`
+                    });
+                }
+                
+                // Recommendation 5: Consistency & Versatility
+                if (perf.uniqueToursCount >= 10 && perf.tourTypeCount >= 3) {
+                    recommendations.push({
+                        type: 'success',
+                        priority: 'excellent',
+                        icon: 'medal',
+                        title: 'Versatility Excellence',
+                        description: `Demonstrates excellent versatility with ${perf.uniqueToursCount} unique tours across ${perf.tourTypeCount} tour types. This diversity provides scheduling flexibility and revenue stability.`
+                    });
+                }
+                
+                // Recommendation 6: Growth potential
+                if (perf.uniqueToursCount < 5 && this.appState.rawData.length > 0) { // If total data exists but this manager has few tours
+                    recommendations.push({
+                        type: 'info',
+                        priority: 'good',
+                        icon: 'seedling',
+                        title: 'Growth Potential',
+                        description: `With ${perf.uniqueToursCount} unique tours, there's significant opportunity for increased tour frequency and experience building. Consider additional training and tour assignments.`
+                    });
+                }
+                
+                return recommendations;
+            },
+
+            // --- Content Update Functions for Operational Dashboard ---
+            updateTourAssignmentOptimization: function() {
+                const tourTypeDataSorted = Object.entries(this.appState.tourTypeAnalysis)
+                    .sort(([,a], [,b]) => b.averageRevenuePerUniqueTour - a.averageRevenuePerUniqueTour);
+                
+                const maxRevenuePerUniqueTour = tourTypeDataSorted.length > 0 ? tourTypeDataSorted[0][1].averageRevenuePerUniqueTour : 1; // For efficiency percentage
+                
+                const optimizationHTML = tourTypeDataSorted.map(([tourType, analysis]) => {
+                    const efficiency = maxRevenuePerUniqueTour > 0 ? Math.min((analysis.averageRevenuePerUniqueTour / maxRevenuePerUniqueTour) * 100, 100) : 0;
+                    let performance = 'poor';
+                    if (efficiency > 80) performance = 'excellent';
+                    else if (efficiency > 60) performance = 'good';
+                    else if (efficiency > 40) performance = 'average';
+                    
+                    return `
+                        <div style="border: 1px solid var(--gray-medium); border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; background: linear-gradient(135deg, #ffffff 0%, ${
+                            performance === 'excellent' ? 'var(--success-light)' : 
+                            performance === 'good' ? 'var(--info-light)' : 
+                            performance === 'average' ? 'var(--warning-light)' : 'var(--danger-light)'
+                        } 100%);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                                <h4 style="font-weight: 600; margin: 0; color: var(--text-dark);">${tourType}</h4>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="font-size: 0.875rem; color: var(--text-medium);">$${Math.round(analysis.averageRevenuePerUniqueTour).toLocaleString()}/unique tour</span>
+                                    <span class="status-indicator status-${performance}">
+                                        <i class="fas fa-circle"></i> ${performance.toUpperCase()}
+                                    </span>
+                                </div>
+                            </div>
+                            <div style="font-size: 0.875rem; color: var(--text-medium); margin-bottom: 0.75rem;">
+                                ${analysis.uniqueToursCount} unique tours &bull; ${analysis.totalTours} total entries &bull; ${analysis.managerCount} managers
+                            </div>
+                            <div class="progress-bar-container" style="height: 8px; border-radius: 6px;">
+                                <div class="progress-bar" style="background: ${
+                                    performance === 'excellent' ? 'var(--primary-green)' : 
+                                    performance === 'good' ? 'var(--primary-blue)' : 
+                                    performance === 'average' ? 'var(--primary-orange)' : 'var(--primary-red)'
+                                }; width: ${efficiency}%; transition: width 0.3s ease;"></div>
+                            </div>
+                            <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-light);">
+                                Efficiency: ${Math.round(efficiency)}% of top tour type
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                document.getElementById('tourAssignmentOptimization').innerHTML = optimizationHTML || '<p style="text-align: center; color: var(--text-medium);">No tour assignment data available.</p>';
+            },
+
+            updatePerformanceCoachingMatrix: function() {
+                const allManagerUniqueTourRevenues = Object.values(this.appState.managerPerformance).map(p => p.averageRevenuePerUniqueTour);
+                const avgRevenuePerUniqueTourOverall = allManagerUniqueTourRevenues.length > 0 ? allManagerUniqueTourRevenues.reduce((sum, p) => sum + p, 0) / allManagerUniqueTourRevenues.length : 0;
+                
+                const coachingHTML = Object.entries(this.appState.managerPerformance)
+                    .sort(([,a], [,b]) => b.totalRevenue - a.totalRevenue) // Sort by total revenue for display
+                    .map(([manager, perf]) => {
+                        let performance = 'poor';
+                        if (perf.averageRevenuePerUniqueTour > avgRevenuePerUniqueTourOverall * 1.3) performance = 'excellent';
+                        else if (perf.averageRevenuePerUniqueTour > avgRevenuePerUniqueTourOverall * 1.1) performance = 'good';
+                        else if (perf.averageRevenuePerUniqueTour > avgRevenuePerUniqueTourOverall * 0.8) performance = 'average';
+                        
+                        let recommendation = 'Intensive Coaching Needed';
+                        if (performance === 'excellent') recommendation = 'Mentor Others';
+                        else if (performance === 'good') recommendation = 'Share Best Practices';
+                        else if (performance === 'average') recommendation = 'Moderate Coaching Focus';
+                        
+                        return `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: linear-gradient(135deg, var(--gray-light) 0%, ${
+                                performance === 'excellent' ? 'var(--success-light)' : 
+                                performance === 'good' ? 'var(--info-light)' : 
+                                performance === 'average' ? 'var(--warning-light)' : 'var(--danger-light)'
+                            } 100%); border-radius: 12px; margin-bottom: 0.75rem; border: 1px solid var(--gray-medium); transition: all 0.3s ease;">
+                                <div>
+                                    <p style="font-weight: 600; margin: 0; color: var(--text-dark);">${manager}</p>
+                                    <p style="font-size: 0.875rem; color: var(--text-medium); margin: 0.25rem 0 0 0;">
+                                        $${Math.round(perf.averageRevenuePerUniqueTour).toLocaleString()}/unique tour &bull; ${perf.uniqueToursCount} unique tours
+                                    </p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span class="status-indicator status-${performance}" style="margin-bottom: 0.25rem;">
+                                        <i class="fas fa-circle"></i> ${performance.toUpperCase()}
+                                    </span>
+                                    <div style="font-size: 0.75rem; color: var(--text-medium); font-weight: 600;">
+                                        ${recommendation}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                
+                document.getElementById('performanceCoachingMatrix').innerHTML = coachingHTML || '<p style="text-align: center; color: var(--text-medium);">No coaching data available.</p>';
+            },
+
+            // --- Export Function ---
+            exportData: function() {
+                const { rawData, managerPerformance, tourTypeAnalysis, uniqueTours } = this.appState;
+                
+                const exportData = {
+                    rawData: rawData,
+                    managerPerformance: Object.fromEntries(
+                        Object.entries(managerPerformance).map(([manager, perf]) => [
+                            manager, 
+                            {
+                                ...perf,
+                                tourTypes: Array.from(perf.tourTypes), // Convert Set to Array for export
+                                uniqueTours: Array.from(perf.uniqueTours) // Convert Set to Array for export
+                            }
+                        ])
+                    ),
+                    tourTypeAnalysis: Object.fromEntries(
+                        Object.entries(tourTypeAnalysis).map(([tourType, analysis]) => [
+                            tourType,
+                            {
+                                ...analysis,
+                                managers: Array.from(analysis.managers), // Convert Set to Array for export
+                                uniqueTours: Array.from(analysis.uniqueTours) // Convert Set to Array for export
+                            }
+                        ])
+                    ),
+                    metadata: {
+                        totalRecords: rawData.length,
+                        uniqueTours: uniqueTours.size,
+                        sourceFiles: [...new Set(rawData.map(record => record.sourceFile || 'Sample Data'))],
+                        lastUpdated: new Date().toISOString(),
+                        dashboardVersion: '2.0.0'
+                    }
+                };
+                
+                try {
+                    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `tour-analytics-export-${new Date().toISOString().slice(0, 10)}.json`; // e.g., tour-analytics-export-2024-07-26.json
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    this.showAlertModal('Export Successful', 'Your analytics data has been exported as a JSON file.');
+                } catch (error) {
+                    console.error('Error during data export:', error);
+                    this.showAlertModal('Export Failed', `Could not export data. Error: ${error.message}`);
+                }
+            },
+
+            // --- Test Function ---
+            testUpload: function() {
+                console.log('Testing upload functionality...');
+                const sampleCSV = `Tour Name,Tour Manager,Tour Date,Adult Rate,Senior Rate,Child Rate,Total Adults,Total Seniors,Total Children,Optional Name
+QDU,Mayan Hein,2024-10-09,399,0,399,18,0,0,Grand Canyon Heli
+GLK,Sarah Johnson,2024-09-14,45,35,25,12,8,5,Audio Guide Premium
+ABC,John Doe,2024-08-01,100,50,25,10,2,3,Premium Tour`;
+                
+                try {
+                    // Simulate file processing for a single file
+                    const parsedData = this.parseCSVContent(sampleCSV, 'test_sample.csv');
+                    // Temporarily add to rawData to check processing, then revert or handle
+                    const originalRawData = [...this.appState.rawData]; // Save current state
+                    this.appState.rawData = [...originalRawData, ...parsedData];
+                    this.appState.filteredData = [...this.appState.rawData];
+                    this.processData(); // Process the combined data
+
+                    this.showAlertModal('Test Success', 'CSV parsing and data processing are working correctly! You can now try uploading your own CSV files.');
+                    
+                    // Revert to original data after test, or save if test is meant to add
+                    this.appState.rawData = originalRawData;
+                    this.appState.filteredData = [...originalRawData];
+                    this.processData(); // Reprocess original data
+                } catch (error) {
+                    console.error('Error in test:', error);
+                    this.showAlertModal('Test Failed', `Error in test: ${error.message}. Check the console for details.`);
+                }
+            },
+
+            // --- Custom Modal Functions (replaces alert/confirm) ---
+            showModal: function(iconClass, title, message, showConfirm, onConfirmCallback) {
+                const modalOverlay = document.getElementById('appModal');
+                const modalIcon = document.getElementById('modalIcon');
+                const modalTitle = document.getElementById('modalTitle');
+                const modalMessage = document.getElementById('modalMessage');
+                const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+                const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+                modalIcon.className = `fas ${iconClass}`;
+                modalTitle.textContent = title;
+                modalMessage.innerHTML = message; // Using innerHTML for line breaks/bolding if needed
+
+                if (showConfirm) {
+                    modalConfirmBtn.style.display = 'inline-flex';
+                    modalConfirmBtn.onclick = () => {
+                        this.hideModal();
+                        if (onConfirmCallback) onConfirmCallback();
+                    };
+                } else {
+                    modalConfirmBtn.style.display = 'none';
+                }
+
+                modalCloseBtn.onclick = () => {
+                    this.hideModal();
+                };
+
+                modalOverlay.classList.add('show');
+            },
+
+            hideModal: function() {
+                document.getElementById('appModal').classList.remove('show');
+            },
+
+            showAlertModal: function(title, message) {
+                let iconClass = 'fa-info-circle';
+                if (title.includes('Error') || title.includes('Failed')) iconClass = 'fa-exclamation-circle';
+                if (title.includes('Success') || title.includes('Complete')) iconClass = 'fa-check-circle';
+                if (title.includes('Warning') || title.includes('Risk')) iconClass = 'fa-exclamation-triangle';
+
+                this.showModal(iconClass, title, message, false);
+            },
+
+            showConfirmModal: function(title, message, onConfirmCallback) {
+                this.showModal('fa-question-circle', title, message, true, onConfirmCallback);
+            },
+
+            // ─── ENHANCEMENT 1: CSV EXPORT ───────────────────────────────────────────
+
+            exportCSV: function(mode) {
+                const data = (mode === 'filtered') ? this.appState.filteredData : this.appState.rawData;
+
+                if (!data || data.length === 0) {
+                    this.showAlertModal('No Data', 'There is no data to export.');
+                    return;
+                }
+
+                const headers = [
+                    'Tour Name', 'Tour Manager', 'Tour Date', 'Optional Service',
+                    'Adult Rate', 'Senior Rate', 'Child Rate',
+                    'Total Adults', 'Total Seniors', 'Total Children',
+                    'Total Participants', 'Revenue', 'Source File'
+                ];
+
+                const escapeCSV = (val) => {
+                    if (val === null || val === undefined) return '';
+                    const str = String(val);
+                    return str.includes(',') || str.includes('"') || str.includes('\n')
+                        ? `"${str.replace(/"/g, '""')}"` : str;
+                };
+
+                const rows = data.map(r => [
+                    r.tourName, r.tourManager, r.tourDate, r.optionalName || '',
+                    r.adultRate, r.seniorRate, r.childRate,
+                    r.totalAdults, r.totalSeniors, r.totalChildren,
+                    r.totalParticipants, r.revenue ? r.revenue.toFixed(2) : '0.00',
+                    r.sourceFile || ''
+                ].map(escapeCSV).join(','));
+
+                const csv = [headers.join(','), ...rows].join('\n');
+                const label = mode === 'filtered' ? 'filtered' : 'all';
+                const filename = `tour-analytics-${label}-${new Date().toISOString().slice(0,10)}.csv`;
+
+                try {
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    this.showAlertModal('CSV Export Complete', `${data.length} records exported as "${filename}".`);
+                } catch (err) {
+                    this.showAlertModal('Export Failed', `Could not export CSV. Error: ${err.message}`);
+                }
+            },
+
+            toggleExportMenu: function(event) {
+                event.stopPropagation();
+                const menu = document.getElementById('exportMenu');
+                menu.classList.toggle('open');
+                // Close on next outside click
+                if (menu.classList.contains('open')) {
+                    const close = (e) => {
+                        if (!e.target.closest('#exportDropdown')) {
+                            menu.classList.remove('open');
+                            document.removeEventListener('click', close);
+                        }
+                    };
+                    setTimeout(() => document.addEventListener('click', close), 0);
+                }
+            },
+
+            closeExportMenu: function() {
+                document.getElementById('exportMenu').classList.remove('open');
+            },
+
+            // ─── ENHANCEMENT 2: DATA TABLE ────────────────────────────────────────────
+
+            // Table state — kept separate from appState for clarity
+            tableState: {
+                sortCol: 'tourDate',
+                sortDir: 'desc',    // 'asc' | 'desc'
+                page: 1,
+                searchTerm: '',
+                displayData: []     // filtered + sorted rows for current view
+            },
+
+            updateDataTableDashboard: function() {
+                this.tableState.page = 1;
+                this.tableState.searchTerm = document.getElementById('tableSearch')?.value || '';
+                this.buildTableData();
+                this.attachTableSortListeners();
+                this.renderTable();
+            },
+
+            buildTableData: function() {
+                const term = this.tableState.searchTerm.toLowerCase().trim();
+                const source = this.appState.filteredData;
+
+                let rows = term
+                    ? source.filter(r =>
+                        (r.tourName || '').toLowerCase().includes(term) ||
+                        (r.tourManager || '').toLowerCase().includes(term) ||
+                        (r.optionalName || '').toLowerCase().includes(term) ||
+                        (r.sourceFile || '').toLowerCase().includes(term)
+                    )
+                    : [...source];
+
+                // Sort
+                const col = this.tableState.sortCol;
+                const dir = this.tableState.sortDir === 'asc' ? 1 : -1;
+
+                rows.sort((a, b) => {
+                    let av = a[col] ?? '';
+                    let bv = b[col] ?? '';
+                    if (col === 'tourDate') {
+                        av = new Date(av).getTime() || 0;
+                        bv = new Date(bv).getTime() || 0;
+                    } else if (typeof av === 'number' || !isNaN(Number(av))) {
+                        av = Number(av) || 0;
+                        bv = Number(bv) || 0;
+                    } else {
+                        av = String(av).toLowerCase();
+                        bv = String(bv).toLowerCase();
+                    }
+                    if (av < bv) return -1 * dir;
+                    if (av > bv) return 1 * dir;
+                    return 0;
+                });
+
+                this.tableState.displayData = rows;
+            },
+
+            renderTable: function() {
+                const { displayData, sortCol, sortDir, page } = this.tableState;
+                const pageSize = parseInt(document.getElementById('tablePageSize')?.value || 25);
+                const totalRows = displayData.length;
+                const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+                const currentPage = Math.min(page, totalPages);
+                this.tableState.page = currentPage;
+
+                const start = (currentPage - 1) * pageSize;
+                const end = Math.min(start + pageSize, totalRows);
+                const pageRows = displayData.slice(start, end);
+
+                // Record count badge
+                const countEl = document.getElementById('tableRecordCount');
+                if (countEl) {
+                    const total = this.appState.filteredData.length;
+                    countEl.textContent = totalRows < total
+                        ? `${totalRows.toLocaleString()} of ${total.toLocaleString()} records`
+                        : `${total.toLocaleString()} record${total !== 1 ? 's' : ''}`;
+                }
+
+                // Update sort indicators on headers
+                document.querySelectorAll('.dt-th.sortable').forEach(th => {
+                    th.classList.remove('sort-asc', 'sort-desc');
+                    const icon = th.querySelector('.sort-icon');
+                    if (icon) icon.className = 'fas fa-sort sort-icon';
+                    if (th.dataset.col === sortCol) {
+                        th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+                        if (icon) icon.className = `fas fa-sort-${sortDir === 'asc' ? 'up' : 'down'} sort-icon`;
+                    }
+                });
+
+                const term = this.tableState.searchTerm.toLowerCase();
+
+                const highlight = (str) => {
+                    if (!term || !str) return str || '';
+                    const re = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                    return String(str).replace(re, '<mark class="search-highlight">$1</mark>');
+                };
+
+                // Build table rows
+                const tbody = document.getElementById('tableBody');
+                if (!pageRows.length) {
+                    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding: 3rem; color: var(--text-light);">
+                        <i class="fas fa-search" style="font-size:2rem; margin-bottom:0.5rem; display:block;"></i>
+                        No records match your search.
+                    </td></tr>`;
+                } else {
+                    tbody.innerHTML = pageRows.map((r, i) => {
+                        const globalIndex = start + i + 1;
+                        const revenue = (r.revenue || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+                        const dateStr = r.tourDate ? new Date(r.tourDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+                        const rowBg = i % 2 === 0 ? '' : 'background: var(--gray-light);';
+                        return `<tr style="${rowBg}">
+                            <td class="dt-td" style="color: var(--text-light); font-size:0.8rem; text-align:center;">${globalIndex}</td>
+                            <td class="dt-td"><span style="font-weight:600; color: var(--primary-blue);">${highlight(r.tourName) || '—'}</span></td>
+                            <td class="dt-td">${highlight(r.tourManager) || '—'}</td>
+                            <td class="dt-td" style="color: var(--text-medium);">${dateStr}</td>
+                            <td class="dt-td" style="text-align:right;">${(r.totalAdults || 0).toLocaleString()}</td>
+                            <td class="dt-td" style="text-align:right;">${(r.totalSeniors || 0).toLocaleString()}</td>
+                            <td class="dt-td" style="text-align:right;">${(r.totalChildren || 0).toLocaleString()}</td>
+                            <td class="dt-td" style="text-align:right; font-weight:600;">${(r.totalParticipants || 0).toLocaleString()}</td>
+                            <td class="dt-td" style="text-align:right;"><span class="dt-revenue">${revenue}</span></td>
+                            <td class="dt-td" style="max-width:160px; overflow:hidden; text-overflow:ellipsis;" title="${r.optionalName || ''}">${highlight(r.optionalName) || '<span style="color:var(--text-light)">—</span>'}</td>
+                            <td class="dt-td" style="text-align:center;"><span class="dt-badge" title="${r.sourceFile || ''}">${r.sourceFile || 'Unknown'}</span></td>
+                        </tr>`;
+                    }).join('');
+                }
+
+                // Pagination
+                const infoEl = document.getElementById('tablePaginationInfo');
+                const btnsEl = document.getElementById('tablePaginationBtns');
+                if (infoEl) infoEl.textContent = totalRows ? `Showing ${start + 1}–${end} of ${totalRows.toLocaleString()}` : '';
+
+                if (btnsEl) {
+                    const makeBtn = (label, page, isActive, isDisabled, icon) => {
+                        const ico = icon ? `<i class="fas ${icon}"></i>` : label;
+                        return `<button class="pg-btn${isActive ? ' active' : ''}" ${isDisabled ? 'disabled' : ''}
+                            onclick="app.gotoPage(${page})">${ico}</button>`;
+                    };
+
+                    let btns = '';
+                    btns += makeBtn('', currentPage - 1, false, currentPage === 1, 'fa-chevron-left');
+
+                    // Smart page window
+                    const window_ = 2;
+                    const pages = new Set([1, totalPages]);
+                    for (let p = Math.max(1, currentPage - window_); p <= Math.min(totalPages, currentPage + window_); p++) pages.add(p);
+                    const sorted = [...pages].sort((a, b) => a - b);
+                    let prev = 0;
+                    sorted.forEach(p => {
+                        if (prev && p - prev > 1) btns += `<span style="padding: 0 4px; color: var(--text-light);">…</span>`;
+                        btns += makeBtn(p, p, p === currentPage, false, null);
+                        prev = p;
+                    });
+
+                    btns += makeBtn('', currentPage + 1, false, currentPage === totalPages, 'fa-chevron-right');
+                    btnsEl.innerHTML = btns;
+                }
+            },
+
+            attachTableSortListeners: function() {
+                document.querySelectorAll('.dt-th.sortable').forEach(th => {
+                    // Add sort icon span if missing
+                    if (!th.querySelector('.sort-icon')) {
+                        th.innerHTML += ' <i class="fas fa-sort sort-icon"></i>';
+                    }
+                    // Clone to remove old listeners
+                    const fresh = th.cloneNode(true);
+                    th.parentNode.replaceChild(fresh, th);
+                    fresh.addEventListener('click', () => {
+                        const col = fresh.dataset.col;
+                        if (this.tableState.sortCol === col) {
+                            this.tableState.sortDir = this.tableState.sortDir === 'asc' ? 'desc' : 'asc';
+                        } else {
+                            this.tableState.sortCol = col;
+                            this.tableState.sortDir = 'asc';
+                        }
+                        this.tableState.page = 1;
+                        this.buildTableData();
+                        this.renderTable();
+                    });
+                });
+            },
+
+            filterTable: function() {
+                this.tableState.searchTerm = document.getElementById('tableSearch').value;
+                this.tableState.page = 1;
+                this.buildTableData();
+                this.renderTable();
+            },
+
+            clearTableSearch: function() {
+                document.getElementById('tableSearch').value = '';
+                this.tableState.searchTerm = '';
+                this.tableState.page = 1;
+                this.buildTableData();
+                this.renderTable();
+            },
+
+            gotoPage: function(page) {
+                this.tableState.page = page;
+                this.renderTable();
+            },
+        };
+
+        // Initialize the app when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>
